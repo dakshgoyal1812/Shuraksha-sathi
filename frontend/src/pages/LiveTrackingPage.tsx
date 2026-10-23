@@ -275,6 +275,7 @@ export const LiveTrackingPage: React.FC = () => {
   const [selectedLandslide, setSelectedLandslide] = useState<LandslideIncident | null>(null);
 
   const [activeSidebarTab, setActiveSidebarTab] = useState<'quakes' | 'cyclones' | 'wildfires' | 'landslides'>('quakes');
+  const [rightPanelMode, setRightPanelMode] = useState<'tests' | 'feeds'>('tests');
   const [isLoadingWeather, setIsLoadingWeather] = useState<boolean>(false);
 
   // Map & Layers References
@@ -297,6 +298,8 @@ export const LiveTrackingPage: React.FC = () => {
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
+    let resizeObserver: ResizeObserver | null = null;
+
     if (!mapInstanceRef.current) {
       const map = L.map(mapContainerRef.current, {
         center: [20.5937, 78.9629], // Default center: India
@@ -318,9 +321,27 @@ export const LiveTrackingPage: React.FC = () => {
       const lsLayer = L.layerGroup().addTo(map);
       landslideLayerRef.current = lsLayer;
       mapInstanceRef.current = map;
+
+      // Force initial size recalculation
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 250);
+    }
+
+    // Observe container size adjustments for flawless responsive rendering
+    if (mapContainerRef.current) {
+      resizeObserver = new ResizeObserver(() => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+        }
+      });
+      resizeObserver.observe(mapContainerRef.current);
     }
 
     return () => {
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
       if (watchIdRef.current !== null) {
         navigator.geolocation.clearWatch(watchIdRef.current);
         watchIdRef.current = null;
@@ -476,6 +497,7 @@ export const LiveTrackingPage: React.FC = () => {
               marker.on('click', () => {
                 setSelectedCyclone(storm);
                 setActiveSidebarTab('cyclones');
+                setRightPanelMode('feeds');
               });
 
               if (cycloneLayerRef.current) {
@@ -545,6 +567,7 @@ export const LiveTrackingPage: React.FC = () => {
               marker.on('click', () => {
                 setSelectedWildfire(fire);
                 setActiveSidebarTab('wildfires');
+                setRightPanelMode('feeds');
               });
 
               if (wildfireLayerRef.current) {
@@ -610,6 +633,7 @@ export const LiveTrackingPage: React.FC = () => {
               marker.on('click', () => {
                 setSelectedLandslide(ls);
                 setActiveSidebarTab('landslides');
+                setRightPanelMode('feeds');
               });
 
               if (landslideLayerRef.current) {
@@ -748,6 +772,8 @@ export const LiveTrackingPage: React.FC = () => {
 
           circle.on('click', () => {
             setSelectedQuake(quakeItem);
+            setActiveSidebarTab('quakes');
+            setRightPanelMode('feeds');
           });
 
           if (earthquakeLayerRef.current) {
@@ -1120,6 +1146,518 @@ export const LiveTrackingPage: React.FC = () => {
     landslideAssessment?.status === 'caution'
   ) ? 'caution' : 'safe';
 
+  // 7 Multi-Hazard Threat Evaluation Tests (Vertical Layout)
+  const renderHazardTests = () => (
+    <div className="flex flex-col space-y-3">
+      {/* Pillar 1: Earthquake / Seismic (200 km) */}
+      <div
+        className={`p-3.5 rounded-2xl border transition-all ${
+          protectionAssessment?.status === 'danger'
+            ? 'bg-red-50/80 border-red-300 text-red-950 shadow-xs'
+            : protectionAssessment?.status === 'caution'
+            ? 'bg-amber-50/80 border-amber-300 text-amber-950 shadow-xs'
+            : 'bg-emerald-50/80 border-emerald-300 text-emerald-950 shadow-xs'
+        }`}
+      >
+        <div className="flex items-center justify-between pb-2 border-b border-black/5">
+          <div className="flex items-center gap-2">
+            <div
+              className={`p-1.5 rounded-lg text-white ${
+                protectionAssessment?.status === 'danger'
+                  ? 'bg-red-600'
+                  : protectionAssessment?.status === 'caution'
+                  ? 'bg-amber-500'
+                  : 'bg-emerald-600'
+              }`}
+            >
+              <Activity className="w-4 h-4" />
+            </div>
+            <span className="font-bold text-xs uppercase tracking-wider text-slate-900">
+              1. Earthquake Threat
+            </span>
+          </div>
+          <span
+            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+              protectionAssessment?.status === 'danger'
+                ? 'bg-red-200 text-red-900'
+                : protectionAssessment?.status === 'caution'
+                ? 'bg-amber-200 text-amber-900'
+                : 'bg-emerald-200 text-emerald-900'
+            }`}
+          >
+            {protectionAssessment ? protectionAssessment.badge : 'PENDING SCAN'}
+          </span>
+        </div>
+
+        <div className="mt-2.5">
+          <div className="text-xs font-bold text-slate-900">
+            {protectionAssessment ? protectionAssessment.title : '200 km Seismic Evaluation'}
+          </div>
+          <p className="text-[11px] text-slate-700 mt-1 leading-relaxed">
+            {protectionAssessment
+              ? protectionAssessment.message
+              : 'Click check button to scan USGS seismic sensor stations within 200 km.'}
+          </p>
+
+          <div className="mt-2.5 pt-2 border-t border-black/5 grid grid-cols-3 gap-1.5 text-center text-xs">
+            <div className="p-1.5 bg-white/70 rounded-lg">
+              <span className="text-[10px] text-slate-500 block">Radius</span>
+              <span className="font-bold text-slate-800">{radiusKm} km</span>
+            </div>
+            <div className="p-1.5 bg-white/70 rounded-lg">
+              <span className="text-[10px] text-slate-500 block">Quakes</span>
+              <span className="font-bold text-slate-800">{earthquakes.length}</span>
+            </div>
+            <div className="p-1.5 bg-white/70 rounded-lg">
+              <span className="text-[10px] text-slate-500 block">Nearest</span>
+              <span className="font-bold text-blue-600 truncate block">
+                {earthquakes.length > 0 ? `${earthquakes[0].distanceKm}km` : 'None'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Pillar 2: Cyclone & High Wind Threat ("Chakravat & Tezt Hawa" - NASA EONET) */}
+      <div
+        className={`p-3.5 rounded-2xl border transition-all ${
+          cycloneAssessment?.status === 'danger'
+            ? 'bg-rose-50/90 border-rose-400 text-rose-950 shadow-xs'
+            : cycloneAssessment?.status === 'caution'
+            ? 'bg-amber-50/80 border-amber-300 text-amber-950 shadow-xs'
+            : 'bg-emerald-50/80 border-emerald-300 text-emerald-950 shadow-xs'
+        }`}
+      >
+        <div className="flex items-center justify-between pb-2 border-b border-black/5">
+          <div className="flex items-center gap-2">
+            <div
+              className={`p-1.5 rounded-lg text-white ${
+                cycloneAssessment?.status === 'danger'
+                  ? 'bg-rose-600'
+                  : cycloneAssessment?.status === 'caution'
+                  ? 'bg-amber-500'
+                  : 'bg-emerald-600'
+              }`}
+            >
+              <Wind className="w-4 h-4" />
+            </div>
+            <span className="font-bold text-xs uppercase tracking-wider text-slate-900">
+              2. Cyclone & Wind (Tezt Hawa)
+            </span>
+          </div>
+          <span
+            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+              cycloneAssessment?.status === 'danger'
+                ? 'bg-rose-200 text-rose-900'
+                : cycloneAssessment?.status === 'caution'
+                ? 'bg-amber-200 text-amber-900'
+                : 'bg-emerald-200 text-emerald-900'
+            }`}
+          >
+            {cycloneAssessment ? cycloneAssessment.level : 'PENDING SCAN'}
+          </span>
+        </div>
+
+        <div className="mt-2.5">
+          <div className="text-xs font-bold text-slate-900">
+            {cycloneAssessment ? cycloneAssessment.title : 'NASA EONET Severe Storms'}
+          </div>
+          <p className="text-[11px] text-slate-700 mt-1 leading-relaxed">
+            {cycloneAssessment
+              ? cycloneAssessment.message
+              : 'Tracks active global tropical cyclones from NASA EONET and evaluates real-time gale force winds (Tezt Hawa).'}
+          </p>
+
+          <div className="mt-2.5 pt-2 border-t border-black/5 grid grid-cols-3 gap-1.5 text-center text-xs">
+            <div className="p-1.5 bg-white/70 rounded-lg">
+              <span className="text-[10px] text-slate-500 block">Nearest Storm</span>
+              <span className="font-bold text-slate-800 truncate block" title={cycloneAssessment?.nearest_cyclone?.name || 'None'}>
+                {cycloneAssessment?.nearest_cyclone ? `${Math.round(cycloneAssessment.nearest_cyclone.distance_km)} km` : 'None'}
+              </span>
+            </div>
+            <div className="p-1.5 bg-white/70 rounded-lg">
+              <span className="text-[10px] text-slate-500 block">Wind Velocity</span>
+              <span className="font-bold text-slate-800 truncate block">
+                {cycloneAssessment ? `${cycloneAssessment.wind_speed_kmh} km/h` : '—'}
+              </span>
+            </div>
+            <div className="p-1.5 bg-white/70 rounded-lg">
+              <span className="text-[10px] text-slate-500 block">Wind Gusts</span>
+              <span className="font-bold text-blue-600 truncate block">
+                {cycloneAssessment ? `${cycloneAssessment.wind_gust_kmh} km/h` : '—'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Pillar 3: Flood Threat (Baadh) */}
+      <div
+        className={`p-3.5 rounded-2xl border transition-all ${
+          floodAssessment?.status === 'danger'
+            ? 'bg-blue-50/80 border-blue-400 text-blue-950 shadow-xs'
+            : floodAssessment?.status === 'caution'
+            ? 'bg-sky-50/80 border-sky-300 text-sky-950 shadow-xs'
+            : 'bg-emerald-50/80 border-emerald-300 text-emerald-950 shadow-xs'
+        }`}
+      >
+        <div className="flex items-center justify-between pb-2 border-b border-black/5">
+          <div className="flex items-center gap-2">
+            <div
+              className={`p-1.5 rounded-lg text-white ${
+                floodAssessment?.status === 'danger'
+                  ? 'bg-blue-600'
+                  : floodAssessment?.status === 'caution'
+                  ? 'bg-sky-500'
+                  : 'bg-emerald-600'
+              }`}
+            >
+              <CloudRain className="w-4 h-4" />
+            </div>
+            <span className="font-bold text-xs uppercase tracking-wider text-slate-900">
+              3. Flood Threat (Baadh)
+            </span>
+          </div>
+          <span
+            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+              floodAssessment?.status === 'danger'
+                ? 'bg-blue-200 text-blue-900'
+                : floodAssessment?.status === 'caution'
+                ? 'bg-sky-200 text-sky-900'
+                : 'bg-emerald-200 text-emerald-900'
+            }`}
+          >
+            {floodAssessment ? floodAssessment.level : 'PENDING SCAN'}
+          </span>
+        </div>
+
+        <div className="mt-2.5">
+          <div className="text-xs font-bold text-slate-900">
+            {floodAssessment ? floodAssessment.title : 'Precipitation & Drainage Analysis'}
+          </div>
+          <p className="text-[11px] text-slate-700 mt-1 leading-relaxed">
+            {floodAssessment
+              ? floodAssessment.message
+              : 'Evaluates real-time rainfall volume, storm surges, and localized waterlogging risk.'}
+          </p>
+
+          <div className="mt-2.5 pt-2 border-t border-black/5 grid grid-cols-3 gap-1.5 text-center text-xs">
+            <div className="p-1.5 bg-white/70 rounded-lg">
+              <span className="text-[10px] text-slate-500 block">Rainfall</span>
+              <span className="font-bold text-slate-800 truncate block">
+                {weatherData ? `${weatherData.rain_1h_mm} mm` : '—'}
+              </span>
+            </div>
+            <div className="p-1.5 bg-white/70 rounded-lg">
+              <span className="text-[10px] text-slate-500 block">Storm Prob</span>
+              <span className="font-bold text-slate-800 truncate block">
+                {weatherData ? `${weatherData.max_precipitation_prob_pct}%` : '—'}
+              </span>
+            </div>
+            <div className="p-1.5 bg-white/70 rounded-lg">
+              <span className="text-[10px] text-slate-500 block">Status</span>
+              <span className="font-bold text-emerald-600 truncate block">
+                {floodAssessment?.status === 'safe' ? 'No Flood' : (floodAssessment?.level || 'Safe')}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Pillar 4: Drought Threat (Sukha) */}
+      <div
+        className={`p-3.5 rounded-2xl border transition-all ${
+          droughtAssessment?.status === 'danger'
+            ? 'bg-amber-50/90 border-amber-400 text-amber-950 shadow-xs'
+            : droughtAssessment?.status === 'caution'
+            ? 'bg-orange-50/80 border-orange-300 text-orange-950 shadow-xs'
+            : 'bg-emerald-50/80 border-emerald-300 text-emerald-950 shadow-xs'
+        }`}
+      >
+        <div className="flex items-center justify-between pb-2 border-b border-black/5">
+          <div className="flex items-center gap-2">
+            <div
+              className={`p-1.5 rounded-lg text-white ${
+                droughtAssessment?.status === 'danger'
+                  ? 'bg-amber-600'
+                  : droughtAssessment?.status === 'caution'
+                  ? 'bg-orange-500'
+                  : 'bg-emerald-600'
+              }`}
+            >
+              <Sun className="w-4 h-4" />
+            </div>
+            <span className="font-bold text-xs uppercase tracking-wider text-slate-900">
+              4. Drought Threat (Sukha)
+            </span>
+          </div>
+          <span
+            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+              droughtAssessment?.status === 'danger'
+                ? 'bg-amber-200 text-amber-900'
+                : droughtAssessment?.status === 'caution'
+                ? 'bg-orange-200 text-orange-900'
+                : 'bg-emerald-200 text-emerald-900'
+            }`}
+          >
+            {droughtAssessment ? droughtAssessment.level : 'PENDING SCAN'}
+          </span>
+        </div>
+
+        <div className="mt-2.5">
+          <div className="text-xs font-bold text-slate-900">
+            {droughtAssessment ? droughtAssessment.title : 'Aridity & Soil Moisture Index'}
+          </div>
+          <p className="text-[11px] text-slate-700 mt-1 leading-relaxed">
+            {droughtAssessment
+              ? droughtAssessment.message
+              : 'Analyzes ambient thermal stress, relative atmospheric humidity, and soil evapotranspiration.'}
+          </p>
+
+          <div className="mt-2.5 pt-2 border-t border-black/5 grid grid-cols-3 gap-1.5 text-center text-xs">
+            <div className="p-1.5 bg-white/70 rounded-lg">
+              <span className="text-[10px] text-slate-500 block">Temp</span>
+              <span className="font-bold text-slate-800 truncate block">
+                {weatherData ? `${weatherData.temperature_c}°C` : '—'}
+              </span>
+            </div>
+            <div className="p-1.5 bg-white/70 rounded-lg">
+              <span className="text-[10px] text-slate-500 block">Humidity</span>
+              <span className="font-bold text-slate-800 truncate block">
+                {weatherData ? `${weatherData.humidity_pct}%` : '—'}
+              </span>
+            </div>
+            <div className="p-1.5 bg-white/70 rounded-lg">
+              <span className="text-[10px] text-slate-500 block">Condition</span>
+              <span className="font-bold text-emerald-600 truncate block">
+                {droughtAssessment?.status === 'safe' ? 'Normal' : (droughtAssessment?.level || 'Safe')}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Pillar 5: Air Pollution & AQI */}
+      <div
+        className={`p-3.5 rounded-2xl border transition-all ${
+          airPollution?.status === 'danger'
+            ? 'bg-purple-50/90 border-purple-400 text-purple-950 shadow-xs'
+            : airPollution?.status === 'caution'
+            ? 'bg-amber-50/80 border-amber-300 text-amber-950 shadow-xs'
+            : 'bg-emerald-50/80 border-emerald-300 text-emerald-950 shadow-xs'
+        }`}
+      >
+        <div className="flex items-center justify-between pb-2 border-b border-black/5">
+          <div className="flex items-center gap-2">
+            <div
+              className={`p-1.5 rounded-lg text-white ${
+                airPollution?.status === 'danger'
+                  ? 'bg-purple-600'
+                  : airPollution?.status === 'caution'
+                  ? 'bg-amber-500'
+                  : 'bg-emerald-600'
+              }`}
+            >
+              <CloudFog className="w-4 h-4" />
+            </div>
+            <span className="font-bold text-xs uppercase tracking-wider text-slate-900">
+              5. Air Pollution & AQI
+            </span>
+          </div>
+          <span
+            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+              airPollution?.status === 'danger'
+                ? 'bg-purple-200 text-purple-900'
+                : airPollution?.status === 'caution'
+                ? 'bg-amber-200 text-amber-900'
+                : 'bg-emerald-200 text-emerald-900'
+            }`}
+          >
+            {airPollution ? airPollution.aqi_category : 'PENDING SCAN'}
+          </span>
+        </div>
+
+        <div className="mt-2.5">
+          <div className="text-xs font-bold text-slate-900">
+            {airPollution ? airPollution.title : 'Ambient Air & Particulate Smog'}
+          </div>
+          <p className="text-[11px] text-slate-700 mt-1 leading-relaxed">
+            {airPollution
+              ? airPollution.message
+              : 'Monitors real-time PM2.5, PM10, and atmospheric smog concentrations against WHO & OpenAQ safety standards.'}
+          </p>
+
+          <div className="mt-2.5 pt-2 border-t border-black/5 grid grid-cols-3 gap-1.5 text-center text-xs">
+            <div className="p-1.5 bg-white/70 rounded-lg">
+              <span className="text-[10px] text-slate-500 block">PM2.5</span>
+              <span className="font-bold text-slate-800 truncate block">
+                {airPollution ? `${airPollution.pm2_5} µg` : '—'}
+              </span>
+            </div>
+            <div className="p-1.5 bg-white/70 rounded-lg">
+              <span className="text-[10px] text-slate-500 block">PM10</span>
+              <span className="font-bold text-slate-800 truncate block">
+                {airPollution ? `${airPollution.pm10} µg` : '—'}
+              </span>
+            </div>
+            <div className="p-1.5 bg-white/70 rounded-lg">
+              <span className="text-[10px] text-slate-500 block">AQI Index</span>
+              <span className={`font-bold truncate block ${airPollution?.status === 'danger' ? 'text-purple-700 font-extrabold' : 'text-emerald-600'}`}>
+                {airPollution ? `${airPollution.aqi_index} / 5` : '—'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Pillar 6: Wildfire Threat */}
+      <div
+        className={`p-3.5 rounded-2xl border transition-all ${
+          wildfireAssessment?.status === 'danger'
+            ? 'bg-rose-50/90 border-rose-400 text-rose-950 shadow-xs'
+            : wildfireAssessment?.status === 'caution'
+            ? 'bg-orange-50/80 border-orange-300 text-orange-950 shadow-xs'
+            : 'bg-emerald-50/80 border-emerald-300 text-emerald-950 shadow-xs'
+        }`}
+      >
+        <div className="flex items-center justify-between pb-2 border-b border-black/5">
+          <div className="flex items-center gap-2">
+            <div
+              className={`p-1.5 rounded-lg text-white ${
+                wildfireAssessment?.status === 'danger'
+                  ? 'bg-rose-600'
+                  : wildfireAssessment?.status === 'caution'
+                  ? 'bg-orange-500'
+                  : 'bg-emerald-600'
+              }`}
+            >
+              <Flame className="w-4 h-4" />
+            </div>
+            <span className="font-bold text-xs uppercase tracking-wider text-slate-900">
+              6. Wildfire Threat
+            </span>
+          </div>
+          <span
+            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+              wildfireAssessment?.status === 'danger'
+                ? 'bg-rose-200 text-rose-900'
+                : wildfireAssessment?.status === 'caution'
+                ? 'bg-orange-200 text-orange-900'
+                : 'bg-emerald-200 text-emerald-900'
+            }`}
+          >
+            {wildfireAssessment ? wildfireAssessment.level : 'PENDING SCAN'}
+          </span>
+        </div>
+
+        <div className="mt-2.5">
+          <div className="text-xs font-bold text-slate-900">
+            {wildfireAssessment ? wildfireAssessment.title : 'NASA EONET Active Wildfires'}
+          </div>
+          <p className="text-[11px] text-slate-700 mt-1 leading-relaxed">
+            {wildfireAssessment
+              ? wildfireAssessment.message
+              : 'Tracks active wildfire events, thermal anomalies, and burned acreage globally via NASA EONET.'}
+          </p>
+
+          <div className="mt-2.5 pt-2 border-t border-black/5 grid grid-cols-3 gap-1.5 text-center text-xs">
+            <div className="p-1.5 bg-white/70 rounded-lg">
+              <span className="text-[10px] text-slate-500 block">Nearest Blaze</span>
+              <span className="font-bold text-slate-800 truncate block" title={wildfireAssessment?.nearest_wildfire?.title || 'None'}>
+                {wildfireAssessment?.nearest_wildfire ? `${Math.round(wildfireAssessment.nearest_wildfire.distance_km)} km` : 'None'}
+              </span>
+            </div>
+            <div className="p-1.5 bg-white/70 rounded-lg">
+              <span className="text-[10px] text-slate-500 block">Burn Area</span>
+              <span className="font-bold text-slate-800 truncate block">
+                {wildfireAssessment?.nearest_wildfire?.acres ? `${Math.round(wildfireAssessment.nearest_wildfire.acres)} ac` : '0 ac'}
+              </span>
+            </div>
+            <div className="p-1.5 bg-white/70 rounded-lg">
+              <span className="text-[10px] text-slate-500 block">Tracked Fires</span>
+              <span className="font-bold text-rose-600 truncate block">
+                {wildfireAssessment ? wildfireAssessment.active_wildfires_count : '—'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Pillar 7: Landslide Threat */}
+      <div
+        className={`p-3.5 rounded-2xl border transition-all ${
+          landslideAssessment?.status === 'danger'
+            ? 'bg-red-50/90 border-red-400 text-red-950 shadow-xs'
+            : landslideAssessment?.status === 'caution'
+            ? 'bg-amber-50/80 border-amber-300 text-amber-950 shadow-xs'
+            : 'bg-emerald-50/80 border-emerald-300 text-emerald-950 shadow-xs'
+        }`}
+      >
+        <div className="flex items-center justify-between pb-2 border-b border-black/5">
+          <div className="flex items-center gap-2">
+            <div
+              className={`p-1.5 rounded-lg text-white ${
+                landslideAssessment?.status === 'danger'
+                  ? 'bg-red-600'
+                  : landslideAssessment?.status === 'caution'
+                  ? 'bg-amber-600'
+                  : 'bg-emerald-600'
+              }`}
+            >
+              <Mountain className="w-4 h-4" />
+            </div>
+            <span className="font-bold text-xs uppercase tracking-wider text-slate-900">
+              7. Landslide Threat
+            </span>
+          </div>
+          <span
+            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+              landslideAssessment?.status === 'danger'
+                ? 'bg-red-200 text-red-900'
+                : landslideAssessment?.status === 'caution'
+                ? 'bg-amber-200 text-amber-900'
+                : 'bg-emerald-200 text-emerald-900'
+            }`}
+          >
+            {landslideAssessment ? landslideAssessment.level : 'PENDING SCAN'}
+          </span>
+        </div>
+
+        <div className="mt-2.5">
+          <div className="text-xs font-bold text-slate-900">
+            {landslideAssessment ? landslideAssessment.title : 'NASA Global Landslide Catalog'}
+          </div>
+          <p className="text-[11px] text-slate-700 mt-1 leading-relaxed">
+            {landslideAssessment
+              ? landslideAssessment.message
+              : 'Correlates rainfall saturation with historical slope failure incidents from NASA Global Landslide Catalog.'}
+          </p>
+
+          <div className="mt-2.5 pt-2 border-t border-black/5 grid grid-cols-3 gap-1.5 text-center text-xs">
+            <div className="p-1.5 bg-white/70 rounded-lg">
+              <span className="text-[10px] text-slate-500 block">Nearest Zone</span>
+              <span className="font-bold text-slate-800 truncate block" title={landslideAssessment?.nearest_landslide?.title || 'None'}>
+                {landslideAssessment?.nearest_landslide ? `${Math.round(landslideAssessment.nearest_landslide.distance_km)} km` : 'None'}
+              </span>
+            </div>
+            <div className="p-1.5 bg-white/70 rounded-lg">
+              <span className="text-[10px] text-slate-500 block">Trigger</span>
+              <span className="font-bold text-slate-800 truncate block">
+                {landslideAssessment?.nearest_landslide?.trigger || 'Rainfall'}
+              </span>
+            </div>
+            <div className="p-1.5 bg-white/70 rounded-lg">
+              <span className="text-[10px] text-slate-500 block">Incidents</span>
+              <span className="font-bold text-amber-700 truncate block">
+                {landslideAssessment ? `${landslideAssessment.catalog_incidents_count} zones` : '—'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       {/* Top Header Card */}
@@ -1246,517 +1784,6 @@ export const LiveTrackingPage: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* 7-Pillar Universal Threat Matrix (Earthquake + Cyclone + Flood + Drought + Air Pollution + Wildfire + Landslide) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {/* Pillar 1: Earthquake / Seismic (200 km) */}
-        <div
-          className={`p-4 rounded-2xl border transition-all ${
-            protectionAssessment?.status === 'danger'
-              ? 'bg-red-50/80 border-red-300 text-red-950 shadow-xs'
-              : protectionAssessment?.status === 'caution'
-              ? 'bg-amber-50/80 border-amber-300 text-amber-950 shadow-xs'
-              : 'bg-emerald-50/80 border-emerald-300 text-emerald-950 shadow-xs'
-          }`}
-        >
-          <div className="flex items-center justify-between pb-2 border-b border-black/5">
-            <div className="flex items-center gap-2">
-              <div
-                className={`p-1.5 rounded-lg text-white ${
-                  protectionAssessment?.status === 'danger'
-                    ? 'bg-red-600'
-                    : protectionAssessment?.status === 'caution'
-                    ? 'bg-amber-500'
-                    : 'bg-emerald-600'
-                }`}
-              >
-                <Activity className="w-4 h-4" />
-              </div>
-              <span className="font-bold text-xs uppercase tracking-wider text-slate-900">
-                1. Earthquake Threat
-              </span>
-            </div>
-            <span
-              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                protectionAssessment?.status === 'danger'
-                  ? 'bg-red-200 text-red-900'
-                  : protectionAssessment?.status === 'caution'
-                  ? 'bg-amber-200 text-amber-900'
-                  : 'bg-emerald-200 text-emerald-900'
-              }`}
-            >
-              {protectionAssessment ? protectionAssessment.badge : 'PENDING SCAN'}
-            </span>
-          </div>
-
-          <div className="mt-3">
-            <div className="text-sm font-bold text-slate-900">
-              {protectionAssessment ? protectionAssessment.title : '200 km Seismic Evaluation'}
-            </div>
-            <p className="text-xs text-slate-700 mt-1 leading-relaxed">
-              {protectionAssessment
-                ? protectionAssessment.message
-                : 'Click check button to scan USGS seismic sensor stations within 200 km.'}
-            </p>
-
-            <div className="mt-3 pt-2.5 border-t border-black/5 grid grid-cols-3 gap-1 text-center text-xs">
-              <div className="p-1.5 bg-white/70 rounded-lg">
-                <span className="text-[10px] text-slate-500 block">Radius</span>
-                <span className="font-bold text-slate-800">{radiusKm} km</span>
-              </div>
-              <div className="p-1.5 bg-white/70 rounded-lg">
-                <span className="text-[10px] text-slate-500 block">Quakes</span>
-                <span className="font-bold text-slate-800">{earthquakes.length}</span>
-              </div>
-              <div className="p-1.5 bg-white/70 rounded-lg">
-                <span className="text-[10px] text-slate-500 block">Nearest</span>
-                <span className="font-bold text-blue-600">
-                  {earthquakes.length > 0 ? `${earthquakes[0].distanceKm}km` : 'None'}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Pillar 2: Cyclone & High Wind Threat ("Chakravat & Tezt Hawa" - NASA EONET) */}
-        <div
-          className={`p-4 rounded-2xl border transition-all ${
-            cycloneAssessment?.status === 'danger'
-              ? 'bg-rose-50/90 border-rose-400 text-rose-950 shadow-xs'
-              : cycloneAssessment?.status === 'caution'
-              ? 'bg-amber-50/80 border-amber-300 text-amber-950 shadow-xs'
-              : 'bg-emerald-50/80 border-emerald-300 text-emerald-950 shadow-xs'
-          }`}
-        >
-          <div className="flex items-center justify-between pb-2 border-b border-black/5">
-            <div className="flex items-center gap-2">
-              <div
-                className={`p-1.5 rounded-lg text-white ${
-                  cycloneAssessment?.status === 'danger'
-                    ? 'bg-rose-600'
-                    : cycloneAssessment?.status === 'caution'
-                    ? 'bg-amber-500'
-                    : 'bg-emerald-600'
-                }`}
-              >
-                <Wind className="w-4 h-4" />
-              </div>
-              <span className="font-bold text-xs uppercase tracking-wider text-slate-900">
-                2. Cyclone & Wind (Tezt Hawa)
-              </span>
-            </div>
-            <span
-              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                cycloneAssessment?.status === 'danger'
-                  ? 'bg-rose-200 text-rose-900'
-                  : cycloneAssessment?.status === 'caution'
-                  ? 'bg-amber-200 text-amber-900'
-                  : 'bg-emerald-200 text-emerald-900'
-              }`}
-            >
-              {cycloneAssessment ? cycloneAssessment.level : 'PENDING SCAN'}
-            </span>
-          </div>
-
-          <div className="mt-3">
-            <div className="text-sm font-bold text-slate-900">
-              {cycloneAssessment ? cycloneAssessment.title : 'NASA EONET Severe Storms'}
-            </div>
-            <p className="text-xs text-slate-700 mt-1 leading-relaxed">
-              {cycloneAssessment
-                ? cycloneAssessment.message
-                : 'Tracks active global tropical cyclones from NASA EONET and evaluates real-time gale force winds (Tezt Hawa).'}
-            </p>
-
-            <div className="mt-3 pt-2.5 border-t border-black/5 grid grid-cols-3 gap-1 text-center text-xs">
-              <div className="p-1.5 bg-white/70 rounded-lg">
-                <span className="text-[10px] text-slate-500 block">Nearest Storm</span>
-                <span className="font-bold text-slate-800 truncate block" title={cycloneAssessment?.nearest_cyclone?.name || 'None'}>
-                  {cycloneAssessment?.nearest_cyclone ? `${Math.round(cycloneAssessment.nearest_cyclone.distance_km)} km` : 'None'}
-                </span>
-              </div>
-              <div className="p-1.5 bg-white/70 rounded-lg">
-                <span className="text-[10px] text-slate-500 block">Wind Velocity</span>
-                <span className="font-bold text-slate-800">
-                  {cycloneAssessment ? `${cycloneAssessment.wind_speed_kmh} km/h` : '—'}
-                </span>
-              </div>
-              <div className="p-1.5 bg-white/70 rounded-lg">
-                <span className="text-[10px] text-slate-500 block">Wind Gusts</span>
-                <span className="font-bold text-blue-600">
-                  {cycloneAssessment ? `${cycloneAssessment.wind_gust_kmh} km/h` : '—'}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Pillar 3: Flood Threat (Baadh) */}
-        <div
-          className={`p-4 rounded-2xl border transition-all ${
-            floodAssessment?.status === 'danger'
-              ? 'bg-blue-50/80 border-blue-400 text-blue-950 shadow-xs'
-              : floodAssessment?.status === 'caution'
-              ? 'bg-sky-50/80 border-sky-300 text-sky-950 shadow-xs'
-              : 'bg-emerald-50/80 border-emerald-300 text-emerald-950 shadow-xs'
-          }`}
-        >
-          <div className="flex items-center justify-between pb-2 border-b border-black/5">
-            <div className="flex items-center gap-2">
-              <div
-                className={`p-1.5 rounded-lg text-white ${
-                  floodAssessment?.status === 'danger'
-                    ? 'bg-blue-600'
-                    : floodAssessment?.status === 'caution'
-                    ? 'bg-sky-500'
-                    : 'bg-emerald-600'
-                }`}
-              >
-                <CloudRain className="w-4 h-4" />
-              </div>
-              <span className="font-bold text-xs uppercase tracking-wider text-slate-900">
-                3. Flood Threat (Baadh)
-              </span>
-            </div>
-            <span
-              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                floodAssessment?.status === 'danger'
-                  ? 'bg-blue-200 text-blue-900'
-                  : floodAssessment?.status === 'caution'
-                  ? 'bg-sky-200 text-sky-900'
-                  : 'bg-emerald-200 text-emerald-900'
-              }`}
-            >
-              {floodAssessment ? floodAssessment.level : 'PENDING SCAN'}
-            </span>
-          </div>
-
-          <div className="mt-3">
-            <div className="text-sm font-bold text-slate-900">
-              {floodAssessment ? floodAssessment.title : 'Precipitation & Drainage Analysis'}
-            </div>
-            <p className="text-xs text-slate-700 mt-1 leading-relaxed">
-              {floodAssessment
-                ? floodAssessment.message
-                : 'Evaluates real-time rainfall volume, storm surges, and localized waterlogging risk.'}
-            </p>
-
-            <div className="mt-3 pt-2.5 border-t border-black/5 grid grid-cols-3 gap-1 text-center text-xs">
-              <div className="p-1.5 bg-white/70 rounded-lg">
-                <span className="text-[10px] text-slate-500 block">Rainfall</span>
-                <span className="font-bold text-slate-800">
-                  {weatherData ? `${weatherData.rain_1h_mm} mm` : '—'}
-                </span>
-              </div>
-              <div className="p-1.5 bg-white/70 rounded-lg">
-                <span className="text-[10px] text-slate-500 block">Storm Prob</span>
-                <span className="font-bold text-slate-800">
-                  {weatherData ? `${weatherData.max_precipitation_prob_pct}%` : '—'}
-                </span>
-              </div>
-              <div className="p-1.5 bg-white/70 rounded-lg">
-                <span className="text-[10px] text-slate-500 block">Status</span>
-                <span className="font-bold text-emerald-600">
-                  {floodAssessment?.status === 'safe' ? 'No Flood' : (floodAssessment?.level || 'Safe')}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Pillar 4: Drought Threat (Sukha) */}
-        <div
-          className={`p-4 rounded-2xl border transition-all ${
-            droughtAssessment?.status === 'danger'
-              ? 'bg-amber-50/90 border-amber-400 text-amber-950 shadow-xs'
-              : droughtAssessment?.status === 'caution'
-              ? 'bg-orange-50/80 border-orange-300 text-orange-950 shadow-xs'
-              : 'bg-emerald-50/80 border-emerald-300 text-emerald-950 shadow-xs'
-          }`}
-        >
-          <div className="flex items-center justify-between pb-2 border-b border-black/5">
-            <div className="flex items-center gap-2">
-              <div
-                className={`p-1.5 rounded-lg text-white ${
-                  droughtAssessment?.status === 'danger'
-                    ? 'bg-amber-600'
-                    : droughtAssessment?.status === 'caution'
-                    ? 'bg-orange-500'
-                    : 'bg-emerald-600'
-                }`}
-              >
-                <Sun className="w-4 h-4" />
-              </div>
-              <span className="font-bold text-xs uppercase tracking-wider text-slate-900">
-                4. Drought Threat (Sukha)
-              </span>
-            </div>
-            <span
-              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                droughtAssessment?.status === 'danger'
-                  ? 'bg-amber-200 text-amber-900'
-                  : droughtAssessment?.status === 'caution'
-                  ? 'bg-orange-200 text-orange-900'
-                  : 'bg-emerald-200 text-emerald-900'
-              }`}
-            >
-              {droughtAssessment ? droughtAssessment.level : 'PENDING SCAN'}
-            </span>
-          </div>
-
-          <div className="mt-3">
-            <div className="text-sm font-bold text-slate-900">
-              {droughtAssessment ? droughtAssessment.title : 'Aridity & Soil Moisture Index'}
-            </div>
-            <p className="text-xs text-slate-700 mt-1 leading-relaxed">
-              {droughtAssessment
-                ? droughtAssessment.message
-                : 'Analyzes ambient thermal stress, relative atmospheric humidity, and soil evapotranspiration.'}
-            </p>
-
-            <div className="mt-3 pt-2.5 border-t border-black/5 grid grid-cols-3 gap-1 text-center text-xs">
-              <div className="p-1.5 bg-white/70 rounded-lg">
-                <span className="text-[10px] text-slate-500 block">Temp</span>
-                <span className="font-bold text-slate-800">
-                  {weatherData ? `${weatherData.temperature_c}°C` : '—'}
-                </span>
-              </div>
-              <div className="p-1.5 bg-white/70 rounded-lg">
-                <span className="text-[10px] text-slate-500 block">Humidity</span>
-                <span className="font-bold text-slate-800">
-                  {weatherData ? `${weatherData.humidity_pct}%` : '—'}
-                </span>
-              </div>
-              <div className="p-1.5 bg-white/70 rounded-lg">
-                <span className="text-[10px] text-slate-500 block">Condition</span>
-                <span className="font-bold text-emerald-600">
-                  {droughtAssessment?.status === 'safe' ? 'Normal' : (droughtAssessment?.level || 'Safe')}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Pillar 5: Air Pollution & AQI (OpenWeather & OpenAQ) */}
-        <div
-          className={`p-4 rounded-2xl border transition-all ${
-            airPollution?.status === 'danger'
-              ? 'bg-purple-50/90 border-purple-400 text-purple-950 shadow-xs'
-              : airPollution?.status === 'caution'
-              ? 'bg-amber-50/80 border-amber-300 text-amber-950 shadow-xs'
-              : 'bg-emerald-50/80 border-emerald-300 text-emerald-950 shadow-xs'
-          }`}
-        >
-          <div className="flex items-center justify-between pb-2 border-b border-black/5">
-            <div className="flex items-center gap-2">
-              <div
-                className={`p-1.5 rounded-lg text-white ${
-                  airPollution?.status === 'danger'
-                    ? 'bg-purple-600'
-                    : airPollution?.status === 'caution'
-                    ? 'bg-amber-500'
-                    : 'bg-emerald-600'
-                }`}
-              >
-                <CloudFog className="w-4 h-4" />
-              </div>
-              <span className="font-bold text-xs uppercase tracking-wider text-slate-900">
-                5. Air Pollution & AQI
-              </span>
-            </div>
-            <span
-              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                airPollution?.status === 'danger'
-                  ? 'bg-purple-200 text-purple-900'
-                  : airPollution?.status === 'caution'
-                  ? 'bg-amber-200 text-amber-900'
-                  : 'bg-emerald-200 text-emerald-900'
-              }`}
-            >
-              {airPollution ? airPollution.aqi_category : 'PENDING SCAN'}
-            </span>
-          </div>
-
-          <div className="mt-3">
-            <div className="text-sm font-bold text-slate-900">
-              {airPollution ? airPollution.title : 'Ambient Air & Particulate Smog'}
-            </div>
-            <p className="text-xs text-slate-700 mt-1 leading-relaxed">
-              {airPollution
-                ? airPollution.message
-                : 'Monitors real-time PM2.5, PM10, and atmospheric smog concentrations against WHO & OpenAQ safety standards.'}
-            </p>
-
-            <div className="mt-3 pt-2.5 border-t border-black/5 grid grid-cols-3 gap-1 text-center text-xs">
-              <div className="p-1.5 bg-white/70 rounded-lg">
-                <span className="text-[10px] text-slate-500 block">PM2.5</span>
-                <span className="font-bold text-slate-800">
-                  {airPollution ? `${airPollution.pm2_5} µg` : '—'}
-                </span>
-              </div>
-              <div className="p-1.5 bg-white/70 rounded-lg">
-                <span className="text-[10px] text-slate-500 block">PM10</span>
-                <span className="font-bold text-slate-800">
-                  {airPollution ? `${airPollution.pm10} µg` : '—'}
-                </span>
-              </div>
-              <div className="p-1.5 bg-white/70 rounded-lg">
-                <span className="text-[10px] text-slate-500 block">AQI Index</span>
-                <span className={`font-bold ${airPollution?.status === 'danger' ? 'text-purple-700 font-extrabold' : 'text-emerald-600'}`}>
-                  {airPollution ? `${airPollution.aqi_index} / 5` : '—'}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Pillar 6: Wildfire Threat (NASA EONET Active Thermal Blazes) */}
-        <div
-          className={`p-4 rounded-2xl border transition-all ${
-            wildfireAssessment?.status === 'danger'
-              ? 'bg-rose-50/90 border-rose-400 text-rose-950 shadow-xs'
-              : wildfireAssessment?.status === 'caution'
-              ? 'bg-orange-50/80 border-orange-300 text-orange-950 shadow-xs'
-              : 'bg-emerald-50/80 border-emerald-300 text-emerald-950 shadow-xs'
-          }`}
-        >
-          <div className="flex items-center justify-between pb-2 border-b border-black/5">
-            <div className="flex items-center gap-2">
-              <div
-                className={`p-1.5 rounded-lg text-white ${
-                  wildfireAssessment?.status === 'danger'
-                    ? 'bg-rose-600'
-                    : wildfireAssessment?.status === 'caution'
-                    ? 'bg-orange-500'
-                    : 'bg-emerald-600'
-                }`}
-              >
-                <Flame className="w-4 h-4" />
-              </div>
-              <span className="font-bold text-xs uppercase tracking-wider text-slate-900">
-                6. Wildfire Threat
-              </span>
-            </div>
-            <span
-              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                wildfireAssessment?.status === 'danger'
-                  ? 'bg-rose-200 text-rose-900'
-                  : wildfireAssessment?.status === 'caution'
-                  ? 'bg-orange-200 text-orange-900'
-                  : 'bg-emerald-200 text-emerald-900'
-              }`}
-            >
-              {wildfireAssessment ? wildfireAssessment.level : 'PENDING SCAN'}
-            </span>
-          </div>
-
-          <div className="mt-3">
-            <div className="text-sm font-bold text-slate-900">
-              {wildfireAssessment ? wildfireAssessment.title : 'NASA EONET Active Wildfires'}
-            </div>
-            <p className="text-xs text-slate-700 mt-1 leading-relaxed">
-              {wildfireAssessment
-                ? wildfireAssessment.message
-                : 'Tracks active wildfire events, thermal anomalies, and burned acreage globally via NASA EONET.'}
-            </p>
-
-            <div className="mt-3 pt-2.5 border-t border-black/5 grid grid-cols-3 gap-1 text-center text-xs">
-              <div className="p-1.5 bg-white/70 rounded-lg">
-                <span className="text-[10px] text-slate-500 block">Nearest Blaze</span>
-                <span className="font-bold text-slate-800 truncate block" title={wildfireAssessment?.nearest_wildfire?.title || 'None'}>
-                  {wildfireAssessment?.nearest_wildfire ? `${Math.round(wildfireAssessment.nearest_wildfire.distance_km)} km` : 'None'}
-                </span>
-              </div>
-              <div className="p-1.5 bg-white/70 rounded-lg">
-                <span className="text-[10px] text-slate-500 block">Burn Area</span>
-                <span className="font-bold text-slate-800">
-                  {wildfireAssessment?.nearest_wildfire?.acres ? `${Math.round(wildfireAssessment.nearest_wildfire.acres)} ac` : '0 ac'}
-                </span>
-              </div>
-              <div className="p-1.5 bg-white/70 rounded-lg">
-                <span className="text-[10px] text-slate-500 block">Tracked Fires</span>
-                <span className="font-bold text-rose-600">
-                  {wildfireAssessment ? wildfireAssessment.active_wildfires_count : '—'}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Pillar 7: Landslide Threat (NASA Global Landslide Catalog from ArcGIS) */}
-        <div
-          className={`p-4 rounded-2xl border transition-all ${
-            landslideAssessment?.status === 'danger'
-              ? 'bg-red-50/90 border-red-400 text-red-950 shadow-xs'
-              : landslideAssessment?.status === 'caution'
-              ? 'bg-amber-50/80 border-amber-300 text-amber-950 shadow-xs'
-              : 'bg-emerald-50/80 border-emerald-300 text-emerald-950 shadow-xs'
-          }`}
-        >
-          <div className="flex items-center justify-between pb-2 border-b border-black/5">
-            <div className="flex items-center gap-2">
-              <div
-                className={`p-1.5 rounded-lg text-white ${
-                  landslideAssessment?.status === 'danger'
-                    ? 'bg-red-600'
-                    : landslideAssessment?.status === 'caution'
-                    ? 'bg-amber-600'
-                    : 'bg-emerald-600'
-                }`}
-              >
-                <Mountain className="w-4 h-4" />
-              </div>
-              <span className="font-bold text-xs uppercase tracking-wider text-slate-900">
-                7. Landslide Threat
-              </span>
-            </div>
-            <span
-              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                landslideAssessment?.status === 'danger'
-                  ? 'bg-red-200 text-red-900'
-                  : landslideAssessment?.status === 'caution'
-                  ? 'bg-amber-200 text-amber-900'
-                  : 'bg-emerald-200 text-emerald-900'
-              }`}
-            >
-              {landslideAssessment ? landslideAssessment.level : 'PENDING SCAN'}
-            </span>
-          </div>
-
-          <div className="mt-3">
-            <div className="text-sm font-bold text-slate-900">
-              {landslideAssessment ? landslideAssessment.title : 'NASA Global Landslide Catalog'}
-            </div>
-            <p className="text-xs text-slate-700 mt-1 leading-relaxed">
-              {landslideAssessment
-                ? landslideAssessment.message
-                : 'Correlates rainfall saturation with historical slope failure incidents from NASA Global Landslide Catalog.'}
-            </p>
-
-            <div className="mt-3 pt-2.5 border-t border-black/5 grid grid-cols-3 gap-1 text-center text-xs">
-              <div className="p-1.5 bg-white/70 rounded-lg">
-                <span className="text-[10px] text-slate-500 block">Nearest Zone</span>
-                <span className="font-bold text-slate-800 truncate block" title={landslideAssessment?.nearest_landslide?.title || 'None'}>
-                  {landslideAssessment?.nearest_landslide ? `${Math.round(landslideAssessment.nearest_landslide.distance_km)} km` : 'None'}
-                </span>
-              </div>
-              <div className="p-1.5 bg-white/70 rounded-lg">
-                <span className="text-[10px] text-slate-500 block">Trigger</span>
-                <span className="font-bold text-slate-800 truncate block">
-                  {landslideAssessment?.nearest_landslide?.trigger || 'Rainfall'}
-                </span>
-              </div>
-              <div className="p-1.5 bg-white/70 rounded-lg">
-                <span className="text-[10px] text-slate-500 block">Incidents</span>
-                <span className="font-bold text-amber-700">
-                  {landslideAssessment ? `${landslideAssessment.catalog_incidents_count} zones` : '—'}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Real-time Weather & Multi-Hazard Telemetry Widget Bar */}
       {weatherData && (
         <div className="bg-white p-4 rounded-2xl border border-[#E1E7EF] shadow-xs flex flex-wrap items-center justify-between gap-4">
@@ -1822,11 +1849,11 @@ export const LiveTrackingPage: React.FC = () => {
         </div>
       )}
 
-      {/* Main Map + Seismic Activity Feed Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Left 3 cols: Leaflet Map Container */}
-        <div className="lg:col-span-3 flex flex-col space-y-3">
-          <div className="relative rounded-2xl overflow-hidden border border-[#E1E7EF] bg-slate-100 shadow-sm h-[560px]">
+      {/* Main Grid: Leaflet Map (Left) + Multi-Hazard Threat Tests & Feeds (Right Vertical) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left: Leaflet Map Container */}
+        <div className="lg:col-span-7 xl:col-span-8 flex flex-col space-y-3">
+          <div className="relative rounded-2xl overflow-hidden border border-[#E1E7EF] bg-slate-100 shadow-sm h-[680px]">
             <div id="live-tracking-map" ref={mapContainerRef} className="w-full h-full" />
 
             {/* Map Legend */}
@@ -1941,10 +1968,63 @@ export const LiveTrackingPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Right 1 col: Live Activity Feed (Earthquakes / NASA Cyclones Tabs) */}
-        <div className="flex flex-col space-y-4">
-          <div className="bg-white p-4 rounded-2xl border border-[#E1E7EF] shadow-xs flex-1 flex flex-col min-h-[500px]">
-            {/* Feed Tabs Switcher */}
+        {/* Right: Threat Intelligence & 7 Multi-Hazard Tests / Feeds */}
+        <div className="lg:col-span-5 xl:col-span-4 flex flex-col space-y-4">
+          <div className="bg-white p-4 rounded-2xl border border-[#E1E7EF] shadow-xs flex flex-col h-[760px]">
+            {/* Top Header & View Switcher */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-bold text-slate-900 tracking-tight">Threat Intelligence</span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  worstHazardStatus === "danger"
+                    ? "bg-rose-100 text-rose-700"
+                    : worstHazardStatus === "caution"
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-emerald-100 text-emerald-700"
+                }`}>
+                  {worstHazardStatus.toUpperCase()}
+                </span>
+              </div>
+
+              {/* Segmented Switcher: [ 7 Threat Tests ] | [ Live Feeds ] */}
+              <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200/80">
+                <button
+                  type="button"
+                  onClick={() => setRightPanelMode("tests")}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    rightPanelMode === "tests"
+                      ? "bg-white text-slate-900 shadow-xs"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>7 Threat Tests</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRightPanelMode("feeds")}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    rightPanelMode === "feeds"
+                      ? "bg-white text-slate-900 shadow-xs"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  <Radio className="w-3.5 h-3.5 text-rose-500" />
+                  <span>Live Feeds</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Mode 1: 7 Multi-Hazard Threat Tests (Vertical Stack) */}
+            {rightPanelMode === "tests" && (
+              <div className="flex-1 overflow-y-auto pr-1 mt-3 space-y-3">
+                {renderHazardTests()}
+              </div>
+            )}
+
+            {/* Mode 2: Live Activity Feeds */}
+            {rightPanelMode === "feeds" && (
+              <div className="flex-1 flex flex-col min-h-0 mt-3">
             <div className="flex flex-col gap-2 pb-3 border-b border-slate-100">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Hazard Feeds</span>
@@ -2012,7 +2092,7 @@ export const LiveTrackingPage: React.FC = () => {
 
             {/* Earthquakes Feed */}
             {activeSidebarTab === 'quakes' && (
-              <div className="mt-3 space-y-2.5 overflow-y-auto max-h-[520px] pr-1">
+              <div className="mt-3 space-y-2.5 overflow-y-auto max-h-[640px] pr-1">
                 {earthquakes.length === 0 ? (
                   <div className="text-center py-12 px-4 text-slate-400">
                     <MapPin className="w-8 h-8 mx-auto mb-2 opacity-30 text-slate-500" />
@@ -2091,7 +2171,7 @@ export const LiveTrackingPage: React.FC = () => {
 
             {/* NASA EONET Active Cyclones & Storms Feed */}
             {activeSidebarTab === 'cyclones' && (
-              <div className="mt-3 space-y-2.5 overflow-y-auto max-h-[520px] pr-1">
+              <div className="mt-3 space-y-2.5 overflow-y-auto max-h-[640px] pr-1">
                 {(!cycloneAssessment?.all_active_storms || cycloneAssessment.all_active_storms.length === 0) ? (
                   <div className="text-center py-12 px-4 text-slate-400">
                     <Wind className="w-8 h-8 mx-auto mb-2 opacity-30 text-slate-500" />
@@ -2178,7 +2258,7 @@ export const LiveTrackingPage: React.FC = () => {
 
             {/* NASA EONET Active Wildfires Feed */}
             {activeSidebarTab === 'wildfires' && (
-              <div className="mt-3 space-y-2.5 overflow-y-auto max-h-[520px] pr-1">
+              <div className="mt-3 space-y-2.5 overflow-y-auto max-h-[640px] pr-1">
                 {(!wildfireAssessment?.all_active_wildfires || wildfireAssessment.all_active_wildfires.length === 0) ? (
                   <div className="text-center py-12 px-4 text-slate-400">
                     <Flame className="w-8 h-8 mx-auto mb-2 opacity-30 text-rose-500" />
@@ -2267,7 +2347,7 @@ export const LiveTrackingPage: React.FC = () => {
 
             {/* NASA Global Landslide Catalog Feed */}
             {activeSidebarTab === 'landslides' && (
-              <div className="mt-3 space-y-2.5 overflow-y-auto max-h-[520px] pr-1">
+              <div className="mt-3 space-y-2.5 overflow-y-auto max-h-[640px] pr-1">
                 {(!landslideAssessment?.nearby_landslides || landslideAssessment.nearby_landslides.length === 0) ? (
                   <div className="text-center py-12 px-4 text-slate-400">
                     <Mountain className="w-8 h-8 mx-auto mb-2 opacity-30 text-amber-700" />
@@ -2347,6 +2427,8 @@ export const LiveTrackingPage: React.FC = () => {
                     })}
                   </>
                 )}
+              </div>
+            )}
               </div>
             )}
           </div>
