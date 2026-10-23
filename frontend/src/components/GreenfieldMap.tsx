@@ -130,7 +130,7 @@ export const GreenfieldMap: React.FC<GreenfieldMapProps> = ({
   return (
     <div
       ref={containerRef}
-      className="relative w-full rounded-xl overflow-hidden border border-slate-800 bg-navy-950 shadow-2xl select-none"
+      className="relative w-full rounded-2xl overflow-hidden border border-[#E1E7EF] bg-slate-900 shadow-xs select-none"
       style={{ height }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -138,24 +138,24 @@ export const GreenfieldMap: React.FC<GreenfieldMapProps> = ({
       onMouseLeave={handleMouseUp}
     >
       {/* Map Control Buttons */}
-      <div className="absolute top-4 left-4 z-20 flex flex-col gap-1.5 bg-navy-900/90 backdrop-blur-md p-1.5 rounded-lg border border-slate-700/60 shadow-lg">
+      <div className="absolute top-4 left-4 z-20 flex flex-col gap-1.5 bg-white/95 backdrop-blur-md p-1.5 rounded-xl border border-[#E1E7EF] shadow-md">
         <button
           onClick={() => handleZoom(0.2)}
-          className="p-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded transition"
+          className="p-2 text-slate-700 hover:text-black hover:bg-slate-100 rounded-lg transition"
           title="Zoom In"
         >
           <ZoomIn className="w-4 h-4" />
         </button>
         <button
           onClick={() => handleZoom(-0.2)}
-          className="p-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded transition"
+          className="p-2 text-slate-700 hover:text-black hover:bg-slate-100 rounded-lg transition"
           title="Zoom Out"
         >
           <ZoomOut className="w-4 h-4" />
         </button>
         <button
           onClick={handleResetView}
-          className="p-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded transition"
+          className="p-2 text-slate-700 hover:text-black hover:bg-slate-100 rounded-lg transition"
           title="Reset View"
         >
           <Maximize2 className="w-4 h-4" />
@@ -163,52 +163,52 @@ export const GreenfieldMap: React.FC<GreenfieldMapProps> = ({
       </div>
 
       {/* Layer Visibility Toggles */}
-      <div className="absolute top-4 right-4 z-20 flex items-center gap-2 bg-navy-900/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-700/60 text-xs text-slate-300 shadow-lg">
-        <Layers className="w-4 h-4 text-cyan-400 mr-1" />
-        <label className="flex items-center gap-1 cursor-pointer hover:text-white">
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-2.5 bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-xl border border-[#E1E7EF] text-xs text-[#0F172A] shadow-md font-medium">
+        <Layers className="w-4 h-4 text-slate-700 mr-0.5" />
+        <label className="flex items-center gap-1.5 cursor-pointer hover:text-black">
           <input
             type="checkbox"
             checked={showAgents}
             onChange={(e) => setShowAgents(e.target.checked)}
-            className="rounded bg-slate-800 border-slate-700 text-blue-600 focus:ring-0"
+            className="rounded border-slate-300 text-slate-900 focus:ring-0"
           />
           Agents ({agents.length})
         </label>
-        <span className="text-slate-600">|</span>
-        <label className="flex items-center gap-1 cursor-pointer hover:text-white">
+        <span className="text-slate-300">|</span>
+        <label className="flex items-center gap-1.5 cursor-pointer hover:text-black">
           <input
             type="checkbox"
             checked={showHazard}
             onChange={(e) => setShowHazard(e.target.checked)}
-            className="rounded bg-slate-800 border-slate-700 text-red-600 focus:ring-0"
+            className="rounded border-slate-300 text-rose-600 focus:ring-0"
           />
           Hazard
         </label>
-        <span className="text-slate-600">|</span>
-        <label className="flex items-center gap-1 cursor-pointer hover:text-white">
+        <span className="text-slate-300">|</span>
+        <label className="flex items-center gap-1.5 cursor-pointer hover:text-black">
           <input
             type="checkbox"
             checked={showShelters}
             onChange={(e) => setShowShelters(e.target.checked)}
-            className="rounded bg-slate-800 border-slate-700 text-emerald-600 focus:ring-0"
+            className="rounded border-slate-300 text-emerald-600 focus:ring-0"
           />
           Shelters
         </label>
-        <span className="text-slate-600">|</span>
+        <span className="text-slate-300">|</span>
         <button
           onClick={() => setShowLegend(!showLegend)}
-          className="text-xs text-cyan-400 hover:underline ml-1"
+          className="text-xs text-slate-900 font-semibold hover:underline ml-0.5"
         >
           {showLegend ? 'Hide Legend' : 'Legend'}
         </button>
       </div>
 
       {/* Town Branding Badge */}
-      <div className="absolute bottom-4 left-4 z-20 bg-navy-900/90 backdrop-blur-md px-3.5 py-2 rounded-lg border border-slate-700/60 text-xs shadow-lg flex items-center gap-2.5">
-        <Compass className="w-4 h-4 text-cyan-400 animate-spin-slow" />
+      <div className="absolute bottom-4 left-4 z-20 bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-xl border border-[#E1E7EF] text-xs shadow-md flex items-center gap-2.5">
+        <Compass className="w-4 h-4 text-slate-800 animate-spin-slow" />
         <div>
-          <span className="font-semibold text-slate-100">Greenfield City</span>
-          <span className="text-slate-400 text-[11px] block">Simulated Road Graph • 20 Nodes, 32 Edges</span>
+          <span className="font-bold text-[#0F172A] block">Greenfield City</span>
+          <span className="text-[#64748B] text-[11px] block">Simulated Road Graph • 20 Nodes, 32 Edges</span>
         </div>
       </div>
 
@@ -510,28 +510,28 @@ export const GreenfieldMap: React.FC<GreenfieldMapProps> = ({
 
       {/* Map Legend Overlay */}
       {showLegend && (
-        <div className="absolute bottom-4 right-4 z-20 bg-navy-900/95 backdrop-blur-md p-3 rounded-lg border border-slate-700/60 text-xs shadow-xl max-w-xs">
-          <div className="flex items-center justify-between pb-1.5 mb-2 border-b border-slate-800">
-            <span className="font-semibold text-slate-200">Simulation Map Legend</span>
-            <button onClick={() => setShowLegend(false)} className="text-slate-400 hover:text-white">
+        <div className="absolute bottom-4 right-4 z-20 bg-white/95 backdrop-blur-md p-3.5 rounded-2xl border border-[#E1E7EF] text-xs shadow-xl max-w-xs text-[#0F172A]">
+          <div className="flex items-center justify-between pb-1.5 mb-2 border-b border-[#E1E7EF]">
+            <span className="font-bold text-[#0F172A]">Simulation Map Legend</span>
+            <button onClick={() => setShowLegend(false)} className="text-slate-400 hover:text-slate-900">
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px] text-slate-300">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px] text-[#475569]">
             <div className="flex items-center gap-1.5">
-              <span className="w-3.5 h-1 bg-cyan-400 rounded-sm"></span>
+              <span className="w-3.5 h-1 bg-cyan-500 rounded-sm"></span>
               <span>Open Road Flow</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-3.5 h-1 bg-amber-400 rounded-sm"></span>
+              <span className="w-3.5 h-1 bg-amber-500 rounded-sm"></span>
               <span>Moderate Congestion</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-3.5 h-1 bg-red-600 rounded-sm"></span>
+              <span className="w-3.5 h-1 bg-rose-600 rounded-sm"></span>
               <span>Critical Bottleneck</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-3.5 h-1 border-t-2 border-dashed border-red-500"></span>
+              <span className="w-3.5 h-1 border-t-2 border-dashed border-rose-500"></span>
               <span>Road Closed / Blocked</span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -539,15 +539,15 @@ export const GreenfieldMap: React.FC<GreenfieldMapProps> = ({
               <span>Evacuated Safe</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-sky-400"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-sky-500"></span>
               <span>Agent in Transit</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
               <span>Re-routing Agent</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
               <span>Unreachable Agent</span>
             </div>
           </div>
@@ -556,39 +556,39 @@ export const GreenfieldMap: React.FC<GreenfieldMapProps> = ({
 
       {/* Road Inspector Floating Modal */}
       {inspectedRoad && (
-        <div className="absolute top-16 left-4 z-30 bg-navy-900/95 backdrop-blur-md p-4 rounded-xl border border-slate-700 shadow-2xl w-80 text-xs">
-          <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-slate-800">
+        <div className="absolute top-16 left-4 z-30 bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-[#E1E7EF] shadow-2xl w-80 text-xs text-[#0F172A]">
+          <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-[#E1E7EF]">
             <div className="flex items-center gap-2">
-              <Car className="w-4 h-4 text-cyan-400" />
-              <span className="font-semibold text-slate-100">{inspectedRoad.name} ({inspectedRoad.id})</span>
+              <Car className="w-4 h-4 text-slate-900" />
+              <span className="font-bold text-[#0F172A]">{inspectedRoad.name} ({inspectedRoad.id})</span>
             </div>
-            <button onClick={() => setInspectedRoad(null)} className="text-slate-400 hover:text-white">
+            <button onClick={() => setInspectedRoad(null)} className="text-slate-400 hover:text-slate-900">
               <X className="w-4 h-4" />
             </button>
           </div>
-          <div className="space-y-1.5 text-slate-300">
+          <div className="space-y-1.5 text-slate-600">
             <div className="flex justify-between">
-              <span className="text-slate-400">Status:</span>
-              <span className={`font-semibold ${blockedRoads.includes(inspectedRoad.id) ? 'text-red-400' : 'text-emerald-400'}`}>
+              <span className="text-[#64748B]">Status:</span>
+              <span className={`font-semibold ${blockedRoads.includes(inspectedRoad.id) ? 'text-rose-600' : 'text-emerald-600'}`}>
                 {blockedRoads.includes(inspectedRoad.id) ? 'CLOSED / BLOCKED' : 'OPEN'}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Length:</span>
+              <span className="text-[#64748B]">Length:</span>
               <span>{inspectedRoad.length} meters</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Design Capacity:</span>
+              <span className="text-[#64748B]">Design Capacity:</span>
               <span>{inspectedRoad.capacity} agents/step</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Current Load Ratio:</span>
-              <span className="font-semibold text-amber-400">
+              <span className="text-[#64748B]">Current Load Ratio:</span>
+              <span className="font-semibold text-amber-700">
                 {Math.round((roadCongestion[inspectedRoad.id] || 0) * 100)}%
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Hazard Exposure:</span>
+              <span className="text-[#64748B]">Hazard Exposure:</span>
               <span>{Math.round(inspectedRoad.hazard_exposure * 100)}%</span>
             </div>
           </div>
@@ -597,33 +597,33 @@ export const GreenfieldMap: React.FC<GreenfieldMapProps> = ({
 
       {/* Shelter Inspector Floating Modal */}
       {inspectedShelter && (
-        <div className="absolute top-16 right-4 z-30 bg-navy-900/95 backdrop-blur-md p-4 rounded-xl border border-slate-700 shadow-2xl w-80 text-xs">
-          <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-slate-800">
+        <div className="absolute top-16 right-4 z-30 bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-[#E1E7EF] shadow-2xl w-80 text-xs text-[#0F172A]">
+          <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-[#E1E7EF]">
             <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-emerald-400" />
-              <span className="font-semibold text-slate-100">{inspectedShelter.name}</span>
+              <Shield className="w-4 h-4 text-emerald-600" />
+              <span className="font-bold text-[#0F172A]">{inspectedShelter.name}</span>
             </div>
-            <button onClick={() => setInspectedShelter(null)} className="text-slate-400 hover:text-white">
+            <button onClick={() => setInspectedShelter(null)} className="text-slate-400 hover:text-slate-900">
               <X className="w-4 h-4" />
             </button>
           </div>
-          <div className="space-y-1.5 text-slate-300">
+          <div className="space-y-1.5 text-slate-600">
             <div className="flex justify-between">
-              <span className="text-slate-400">Status:</span>
-              <span className="text-emerald-400 font-semibold">{inspectedShelter.availability ? 'OPERATIONAL' : 'INACTIVE'}</span>
+              <span className="text-[#64748B]">Status:</span>
+              <span className="text-emerald-700 font-semibold">{inspectedShelter.availability ? 'OPERATIONAL' : 'INACTIVE'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Current Occupancy:</span>
-              <span className="font-bold text-white">
+              <span className="text-[#64748B]">Current Occupancy:</span>
+              <span className="font-bold text-[#0F172A]">
                 {shelterOccupancies[inspectedShelter.id] ?? inspectedShelter.assigned_population} / {inspectedShelter.capacity}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Remaining Capacity:</span>
-              <span>{Math.max(0, inspectedShelter.capacity - (shelterOccupancies[inspectedShelter.id] ?? inspectedShelter.assigned_population))}</span>
+              <span className="text-[#64748B]">Remaining Capacity:</span>
+              <span className="font-semibold text-[#0F172A]">{Math.max(0, inspectedShelter.capacity - (shelterOccupancies[inspectedShelter.id] ?? inspectedShelter.assigned_population))}</span>
             </div>
             {inspectedShelter.notes && (
-              <div className="mt-2 pt-2 border-t border-slate-800 text-slate-400 text-[11px]">
+              <div className="mt-2 pt-2 border-t border-[#E1E7EF] text-[#64748B] text-[11px]">
                 {inspectedShelter.notes}
               </div>
             )}

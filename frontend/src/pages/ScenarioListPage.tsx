@@ -86,65 +86,65 @@ export const ScenarioListPage: React.FC = () => {
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       {/* Header Bar */}
-      <div className="bg-navy-900/90 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-white border border-[#E1E7EF] rounded-2xl p-5 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-black text-white flex items-center gap-2">
-            <FolderKanban className="w-5 h-5 text-cyan-400" />
+          <h1 className="text-xl font-bold text-[#0F172A] flex items-center gap-2">
+            <FolderKanban className="w-5 h-5 text-blue-600" />
             Saved Disaster Scenarios
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-[#64748B] mt-1">
             Persisted disaster drills, baseline models, and What-If modified operational plans.
           </p>
         </div>
 
         <Link
           to="/scenarios/new"
-          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition shadow-md shadow-blue-600/20"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-black hover:bg-slate-800 text-white font-semibold text-xs transition shadow-xs"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4 text-emerald-400" />
           <span>Create Scenario</span>
         </Link>
       </div>
 
       {/* Scenarios Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {scenarios.map((scen) => (
           <div
             key={scen.id}
-            className="p-5 rounded-xl bg-navy-900/80 border border-slate-800 shadow-xl flex flex-col justify-between hover:border-slate-700 transition"
+            className="p-5 rounded-2xl bg-white border border-[#E1E7EF] shadow-xs flex flex-col justify-between hover:border-slate-300 transition"
           >
             <div>
-              <div className="flex items-start justify-between gap-2 pb-3 mb-3 border-b border-slate-800">
+              <div className="flex items-start justify-between gap-2 pb-3 mb-3 border-b border-[#E1E7EF]">
                 <div>
-                  <h3 className="font-bold text-white text-base hover:text-cyan-400 transition">
+                  <h3 className="font-bold text-[#0F172A] text-base hover:text-blue-600 transition">
                     <Link to={`/simulation/${scen.id}`}>{scen.name}</Link>
                   </h3>
-                  <span className="text-[11px] text-slate-500 font-mono block mt-0.5">
+                  <span className="text-[11px] text-[#64748B] font-mono block mt-0.5">
                     Town: {scen.town_name} • Created: {new Date(scen.created_at).toLocaleDateString()}
                   </span>
                 </div>
 
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-900/40 text-cyan-300 border border-blue-700/50">
+                <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase bg-slate-100 text-slate-800 border border-slate-200">
                   {scen.disaster_type} • {scen.severity}
                 </span>
               </div>
 
-              <p className="text-xs text-slate-400 mb-4 line-clamp-2">
+              <p className="text-xs text-[#64748B] mb-4 line-clamp-2 leading-relaxed">
                 {scen.description || 'Configured disaster evacuation exercise.'}
               </p>
 
-              <div className="grid grid-cols-3 gap-2 p-2.5 rounded-lg bg-navy-950 border border-slate-800 text-[11px] mb-4">
+              <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-slate-50 border border-[#E1E7EF] text-[11px] mb-4">
                 <div>
-                  <span className="text-slate-500 block">Population</span>
-                  <span className="font-mono font-bold text-slate-200">{scen.population_size}</span>
+                  <span className="text-[#64748B] block">Population</span>
+                  <span className="font-mono font-bold text-[#0F172A]">{scen.population_size}</span>
                 </div>
                 <div>
-                  <span className="text-slate-500 block">Shelters</span>
-                  <span className="font-mono font-bold text-slate-200">{scen.shelter_count}</span>
+                  <span className="text-[#64748B] block">Shelters</span>
+                  <span className="font-mono font-bold text-[#0F172A]">{scen.shelter_count}</span>
                 </div>
                 <div>
-                  <span className="text-slate-500 block">Clearance</span>
-                  <span className="font-mono font-bold text-emerald-400">
+                  <span className="text-[#64748B] block">Clearance</span>
+                  <span className="font-mono font-bold text-emerald-700">
                     {scen.latest_evacuation_rate != null ? `${scen.latest_evacuation_rate}%` : 'Not run'}
                   </span>
                 </div>
@@ -152,22 +152,22 @@ export const ScenarioListPage: React.FC = () => {
             </div>
 
             {/* Actions Bar */}
-            <div className="flex items-center justify-between pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-between pt-3 border-t border-[#E1E7EF]">
               <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => handleRunDrill(scen.id)}
                   disabled={actionInProgress === scen.id}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition"
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-black hover:bg-slate-800 text-white font-semibold text-xs transition shadow-xs"
                   title="Run simulation"
                 >
-                  <Play className="w-3.5 h-3.5 fill-current" />
+                  <Play className="w-3.5 h-3.5 fill-current text-white" />
                   <span>Run</span>
                 </button>
 
                 <button
                   onClick={() => handleDuplicate(scen.id)}
                   disabled={actionInProgress === scen.id}
-                  className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+                  className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition shadow-xs"
                   title="Duplicate for What-If"
                 >
                   <Copy className="w-3.5 h-3.5" />
@@ -175,7 +175,7 @@ export const ScenarioListPage: React.FC = () => {
 
                 <Link
                   to={`/scenarios/${scen.id}/edit`}
-                  className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+                  className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition shadow-xs"
                   title="Edit Scenario"
                 >
                   <Edit2 className="w-3.5 h-3.5" />
@@ -184,7 +184,7 @@ export const ScenarioListPage: React.FC = () => {
                 <button
                   onClick={() => handleDelete(scen.id)}
                   disabled={actionInProgress === scen.id}
-                  className="p-1.5 rounded bg-slate-800 hover:bg-red-950 hover:text-red-400 text-slate-500 transition"
+                  className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-rose-50 hover:text-rose-600 text-slate-500 transition shadow-xs"
                   title="Delete Scenario"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -193,7 +193,7 @@ export const ScenarioListPage: React.FC = () => {
 
               <Link
                 to={`/simulation/${scen.id}`}
-                className="text-xs font-semibold text-cyan-400 hover:underline flex items-center gap-1"
+                className="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1"
               >
                 <span>Workspace</span>
                 <ArrowRight className="w-3.5 h-3.5" />

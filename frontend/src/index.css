@@ -1,49 +1,151 @@
+@import 'leaflet/dist/leaflet.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+
 @layer base {
   :root {
+    /* Legacy variables */
     --color-surface-bg: #070D1E;
     --color-card-bg: #0B1528;
     --color-border: #1E293B;
+
+    /* ArthaSetu Color Token Registry */
+    --color-border-1: #E1E7EF;
+    --color-muted-2: #1F2937;
+    --color-background-3: #000000;
+    --color-primary-4: #65758B;
+    --color-border-5: rgba(241, 245, 249, 0.8);
+    --color-border-6: rgba(225, 231, 239, 0.4);
+    --color-border-7: rgba(226, 232, 240, 0.8);
+    --color-surface-8: #FFFFFF;
+    --color-primary-9: #64748B;
+    --color-primary-10: #94A3B8;
+    --color-muted-11: #0F172A;
+    --color-surface-12: #F9FAFB;
+    --color-border-13: rgba(225, 231, 239, 0.3);
+    --color-border-14: #1E293B;
+    --color-border-15: rgba(225, 231, 239, 0.6);
+    --color-border-16: #E2E8F0;
+    --color-primary-17: #334155;
+    --color-border-18: rgba(51, 65, 85, 0.5);
+    --color-primary-19: #059669;
+    --color-success-20: #16A34A;
+    --color-danger-21: #E11D48;
+    --color-danger-22: #DC2626;
+    --color-surface-23: #F1F5F9;
+    --color-surface-24: rgba(249, 250, 251, 0.95);
+    --color-surface-25: rgba(243, 245, 247, 0.3);
+    --color-surface-26: #ECFDF5;
+    --color-surface-27: #FFF1F2;
+    --color-background-28: rgba(15, 23, 42, 0.1);
+
+    /* ArthaSetu Spacing Scale */
+    --space-1: 2px;
+    --space-2: 4px;
+    --space-3: 6px;
+    --space-4: 8px;
+    --space-5: 10px;
+    --space-6: 12px;
+    --space-7: 14px;
+    --space-8: 16px;
+    --space-9: 20px;
+    --space-10: 24px;
+    --space-11: 40px;
+
+    /* ArthaSetu Radius Tokens */
+    --radius-1: 3px;
+    --radius-2: 4px;
+    --radius-3: 6px;
+    --radius-4: 12px;
+    --radius-5: 16px;
+    --radius-full: 9999px;
+
+    /* ArthaSetu Shadow Elevation Tokens */
+    --shadow-1: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-2: 0 1px 3px 0 rgba(0, 0, 0, 0.02);
+    --shadow-3: 0 0 1px 0 rgba(0, 0, 0, 0.1);
+    --shadow-4: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    --shadow-5: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
   }
 
   body {
-    background-color: #070D1E;
-    color: #F8FAFC;
+    background-color: #F9FAFB;
+    color: #1F2937;
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     overflow-x: hidden;
   }
 
-  /* Custom scrollbar */
+  /* Custom scrollbar matching ArthaSetu compact styling */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #0B1528;
+    background: #F1F5F9;
   }
   ::-webkit-scrollbar-thumb {
-    background: #1E293B;
+    background: #CBD5E1;
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #334155;
+    background: #94A3B8;
   }
 }
 
-/* Leaflet container fixes */
+/* Leaflet container styling */
 .leaflet-container {
   width: 100%;
   height: 100%;
-  border-radius: 0.75rem;
-  background-color: #070D1E !important;
+  border-radius: 1rem;
+  background-color: #F1F5F9 !important;
+  border: 1px solid #E1E7EF;
 }
 
-/* Glassmorphism utility */
+/* ArthaSetu Glassmorphism & Panel utilities */
 .glass-panel {
-  background: rgba(11, 21, 40, 0.85);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid #E1E7EF;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
+
+.arthasetu-card {
+  background-color: #FFFFFF;
+  border: 1px solid #E1E7EF;
+  border-radius: 1rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* User Grid Background Pattern */
+.grid-wrapper {
+  min-height: 100%;
+  width: 100%;
+  position: relative;
+  background-color: #f8fafc;
+}
+
+.grid-background {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: linear-gradient(to right, #e2e8f0 1px, transparent 1px),
+    linear-gradient(to bottom, #e2e8f0 1px, transparent 1px);
+  background-size: 20px 30px;
+  -webkit-mask-image: radial-gradient(
+    ellipse 70% 60% at 50% 0%,
+    #000 60%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    ellipse 70% 60% at 50% 0%,
+    #000 60%,
+    transparent 100%
+  );
+}
+

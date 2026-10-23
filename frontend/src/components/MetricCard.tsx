@@ -23,38 +23,38 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   const getStatusClasses = () => {
     switch (status) {
       case 'success':
-        return 'text-emerald-400 border-emerald-500/20 bg-emerald-950/20';
+        return 'text-[#059669] border-emerald-200 bg-[#ECFDF5]';
       case 'warning':
-        return 'text-amber-400 border-amber-500/20 bg-amber-950/20';
+        return 'text-amber-700 border-amber-200 bg-amber-50';
       case 'danger':
-        return 'text-red-400 border-red-500/20 bg-red-950/20';
+        return 'text-[#DC2626] border-rose-200 bg-[#FFF1F2]';
       default:
-        return 'text-cyan-400 border-cyan-500/20 bg-cyan-950/20';
+        return 'text-slate-700 border-slate-200 bg-slate-100';
     }
   };
 
   return (
-    <div className="bg-navy-900/80 border border-slate-800 rounded-xl p-4 shadow-lg hover:border-slate-700 transition">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-300">
+    <div className="bg-white border border-[#E1E7EF] rounded-2xl p-4 shadow-xs hover:border-slate-300 transition group">
+      <div className="flex items-center justify-between mb-2.5">
+        <span className="text-[12px] font-semibold text-[#64748B]">
           {label}
         </span>
-        <div className={`p-2 rounded-lg border ${getStatusClasses()}`}>
-          <Icon className="w-4 h-4" />
+        <div className={`p-1.5 rounded-lg border ${getStatusClasses()}`}>
+          <Icon className="w-3.5 h-3.5" />
         </div>
       </div>
 
-      <div className="flex items-baseline gap-1.5 mb-1.5">
-        <span className="text-2xl font-black tracking-tight text-white font-mono">
+      <div className="flex items-baseline gap-1.5 mb-1">
+        <span className="text-[28px] font-bold tracking-tight text-[#0F172A]">
           {value}
         </span>
-        {unit && <span className="text-xs font-medium text-slate-400">{unit}</span>}
+        {unit && <span className="text-xs font-semibold text-[#94A3B8]">{unit}</span>}
       </div>
 
-      <p className="text-xs text-slate-400 leading-snug">{description}</p>
+      <p className="text-[11px] text-[#94A3B8] leading-relaxed">{description}</p>
 
       {trend && (
-        <div className="mt-2.5 pt-2 border-t border-slate-800/80 text-[11px] font-medium text-cyan-300 flex items-center gap-1">
+        <div className="mt-2.5 pt-2 border-t border-slate-100 text-[11px] font-medium text-emerald-700 flex items-center gap-1">
           {trend}
         </div>
       )}

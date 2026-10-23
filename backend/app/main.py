@@ -13,8 +13,10 @@ from .api import (
     compare,
     reports,
     map_api,
-    ai
+    ai,
+    weather
 )
+
 
 # Ensure tables and seed data are created on cold start
 try:
@@ -84,3 +86,5 @@ app.include_router(compare.router)
 app.include_router(reports.router)
 app.include_router(map_api.router)
 app.include_router(ai.router)
+app.include_router(weather.router)
+
