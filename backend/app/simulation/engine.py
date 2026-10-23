@@ -471,6 +471,9 @@ class SimulationEngine:
                 sample_agents = []
                 step_sample_stride = max(1, len(self.agents) // 80)
                 for a in self.agents[::step_sample_stride]:
+                    u_node = a.path[a.edge_index] if (a.path and a.edge_index < len(a.path)) else a.current_node
+                    v_node = a.path[a.edge_index + 1] if (a.path and a.edge_index < len(a.path) - 1) else u_node
+                    prog = round(a.progress_on_edge, 3) if a.status in ("moving", "rerouting") else 0.0
                     sample_agents.append({
                         "id": a.id,
                         "current_node": a.current_node,
@@ -478,7 +481,10 @@ class SimulationEngine:
                         "x": a.x,
                         "y": a.y,
                         "status": a.status,
-                        "category": a.category
+                        "category": a.category,
+                        "edge_u": u_node,
+                        "edge_v": v_node,
+                        "edge_progress": prog
                     })
 
                 self.step_snapshots.append({

@@ -152,7 +152,17 @@ export const GreenfieldMap: React.FC<GreenfieldMapProps> = ({
           </button>
         </div>
 
-        <Greenfield3DScene height={height} initialBlockedRoads={blockedRoads} />
+        <Greenfield3DScene
+          height={height}
+          showOverlay={false}
+          initialBlockedRoads={blockedRoads}
+          mockdrillAgents={agents}
+          mockdrillRoadCongestion={roadCongestion}
+          mockdrillBottlenecks={activeBottlenecks}
+          mockdrillShelterOccupancy={shelterOccupancies}
+          mockdrillBlockedRoads={blockedRoads}
+          isMockdrillActive={true}
+        />
       </div>
     );
   }

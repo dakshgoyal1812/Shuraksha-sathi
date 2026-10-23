@@ -138,6 +138,9 @@ export interface AgentSnapshot {
   y: number;
   status: 'waiting' | 'moving' | 'rerouting' | 'evacuated' | 'unreachable';
   category: string;
+  edge_u?: string;
+  edge_v?: string;
+  edge_progress?: number;
 }
 
 export interface SimulationStepSnapshot {

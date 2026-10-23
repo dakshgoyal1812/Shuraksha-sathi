@@ -7,6 +7,7 @@ import {
   GraphNode,
   SimulationSnapshot,
 } from '../simulation/engine';
+import { AgentSnapshot } from '../types/scenario';
 import {
   createBridgeTrussAndBarricade,
   createBuildingFacadeTexture,
@@ -166,6 +167,8 @@ export class GreenfieldSceneManager {
   private simSpeedMultiplier = 1.0;
   private onSimTickCallback: (dtSimSec: number) => SimulationSnapshot;
   private simAccumulatorSec = 0;
+  public isMockdrillMode = false;
+  private edgeByEndpoints = new Map<string, string>();
 
   constructor(
     container: HTMLElement,
@@ -758,6 +761,8 @@ export class GreenfieldSceneManager {
         blockedXSprite: null,
         lastBadgeStateKey: '',
       });
+      this.edgeByEndpoints.set(`${edge.from}_${edge.to}`, edge.id);
+      this.edgeByEndpoints.set(`${edge.to}_${edge.from}`, edge.id);
     }
   }
 
@@ -1085,6 +1090,221 @@ export class GreenfieldSceneManager {
     }
   }
 
+  public syncMockdrillState(data: {
+    agents: AgentSnapshot[];
+    roadCongestion: Record<string, number>;
+    activeBottlenecks: string[];
+    shelterOccupancies: Record<string, number>;
+    blockedRoads: string[];
+  }): void {
+    this.isMockdrillMode = true;
+
+    // 1. Shelter Bed Occupancies
+    for (const [nodeId, node] of this.nodeMap.entries()) {
+      if (node.category === 'shelter') {
+        const occ =
+          data.shelterOccupancies[node.id] ??
+          data.shelterOccupancies[node.shortCode] ??
+          (node.id === 'N17' ? data.shelterOccupancies['S1'] :
+           node.id === 'N18' ? data.shelterOccupancies['S2'] :
+           node.id === 'N19' ? data.shelterOccupancies['S3'] :
+           node.id === 'N20' ? data.shelterOccupancies['S4'] : undefined);
+
+        if (occ !== undefined && occ !== node.occupied) {
+          node.occupied = occ;
+          const entry = this.shelterSprites.get(node.id);
+          const key = `${node.occupied}/${node.capacity}`;
+          if (entry && entry.lastKey !== key) {
+            this.sheltersGroup.remove(entry.sprite);
+            entry.sprite.material.map?.dispose();
+            entry.sprite.material.dispose();
+            const newSprite = this.createShelterBadgeSprite(node);
+            newSprite.position.set(node.x, 5.2, node.z);
+            this.sheltersGroup.add(newSprite);
+            this.shelterSprites.set(node.id, { sprite: newSprite, lastKey: key });
+          }
+        }
+      }
+    }
+
+    // 2. Road Network Congestion & Bottlenecks
+    for (const [edgeId, item] of this.edgeMeshes.entries()) {
+      const edge = this.latestSnapshot.edges.find((e) => e.id === edgeId);
+      if (!edge) continue;
+
+      const nA = this.nodeMap.get(edge.from);
+      const nB = this.nodeMap.get(edge.to);
+      if (!nA || !nB) continue;
+
+      _vecMid.set((nA.x + nB.x) * 0.5, 0.26, (nA.z + nB.z) * 0.5);
+      const dist = Math.hypot(nB.x - nA.x, nB.z - nA.z);
+      const angleY = Math.atan2(nB.x - nA.x, nB.z - nA.z);
+
+      const endpointKey = `${edge.from}_${edge.to}`;
+      const revEndpointKey = `${edge.to}_${edge.from}`;
+
+      // Check if blocked in scenario
+      const isBlocked =
+        data.blockedRoads.includes(edge.id) ||
+        data.blockedRoads.includes(edge.name) ||
+        data.blockedRoads.includes(endpointKey) ||
+        data.blockedRoads.includes(revEndpointKey) ||
+        (edge.id === 'R-10' && data.blockedRoads.some((r) => r.includes('Bridge') || r === 'E05')) ||
+        (edge.id === 'E05' && data.blockedRoads.some((r) => r.includes('Bridge') || r === 'R-10'));
+
+      // Check congestion ratio
+      let congestion =
+        data.roadCongestion[edge.id] ??
+        data.roadCongestion[edge.name] ??
+        data.roadCongestion[endpointKey] ??
+        data.roadCongestion[revEndpointKey] ??
+        (edge.id === 'R-10' ? data.roadCongestion['E05'] : undefined) ??
+        (edge.id === 'E05' ? data.roadCongestion['R-10'] : undefined) ??
+        0;
+
+      const isBottleneck =
+        data.activeBottlenecks.includes(edge.id) ||
+        data.activeBottlenecks.includes(edge.name) ||
+        data.activeBottlenecks.includes(endpointKey) ||
+        data.activeBottlenecks.includes(revEndpointKey) ||
+        (edge.id === 'R-10' && data.activeBottlenecks.includes('E05')) ||
+        (edge.id === 'E05' && data.activeBottlenecks.includes('R-10'));
+
+      // Update shoulder rails and asphalt road surface color
+      let railHex = 0x0284c7; // Normal flow: Sky Blue
+      let roadTintHex = 0xffffff;
+
+      if (isBlocked) {
+        railHex = 0x991b1b; // Red Barricade
+        roadTintHex = 0xfca5a5;
+      } else if (congestion >= 1.25 || isBottleneck) {
+        railHex = 0xef4444; // Critical Bottleneck: Bright Red
+        roadTintHex = 0xfecaca;
+      } else if (congestion >= 1.0) {
+        railHex = 0xf97316; // High Congestion: Orange
+        roadTintHex = 0xffedd5;
+      } else if (congestion >= 0.85) {
+        railHex = 0xf59e0b; // Moderate Congestion: Amber
+        roadTintHex = 0xfef3c7;
+      }
+
+      item.leftRailMat.color.setHex(railHex);
+      item.leftRailMat.emissive.setHex(railHex);
+      item.rightRailMat.color.setHex(railHex);
+      item.rightRailMat.emissive.setHex(railHex);
+      (item.roadMesh.material as THREE.MeshStandardMaterial).color.setHex(roadTintHex);
+
+      const loadPct = Math.round(congestion * 100);
+      const showBottleneckBadge = !isBlocked && (isBottleneck || loadPct >= 100);
+      const stateKey = `${isBlocked}_${showBottleneckBadge ? Math.round(loadPct / 5) * 5 : 0}`;
+
+      if (item.lastBadgeStateKey !== stateKey) {
+        item.lastBadgeStateKey = stateKey;
+
+        if (item.bridgeGroup) {
+          this.edgesGroup.remove(item.bridgeGroup);
+        }
+        if (edge.isBridge || isBlocked) {
+          item.bridgeGroup = createBridgeTrussAndBarricade(dist, isBlocked);
+          item.bridgeGroup.position.copy(_vecMid);
+          item.bridgeGroup.rotation.y = angleY + Math.PI / 2;
+          this.edgesGroup.add(item.bridgeGroup);
+        } else {
+          item.bridgeGroup = null;
+        }
+
+        if (item.badgeSprite) {
+          this.labelsGroup.remove(item.badgeSprite);
+          item.badgeSprite.material.map?.dispose();
+          item.badgeSprite.material.dispose();
+          item.badgeSprite = null;
+        }
+        if (item.blockedXSprite) {
+          this.labelsGroup.remove(item.blockedXSprite);
+          item.blockedXSprite.material.map?.dispose();
+          item.blockedXSprite.material.dispose();
+          item.blockedXSprite = null;
+        }
+
+        if (isBlocked) {
+          const xSprite = this.createBlockedXSprite();
+          xSprite.position.set(_vecMid.x, 3.1, _vecMid.z);
+          this.labelsGroup.add(xSprite);
+          item.blockedXSprite = xSprite;
+        } else if (showBottleneckBadge) {
+          const bSprite = this.createBottleneckLoadSprite(loadPct, false);
+          bSprite.position.set(_vecMid.x, 2.55, _vecMid.z);
+          this.labelsGroup.add(bSprite);
+          item.badgeSprite = bSprite;
+        }
+      }
+    }
+
+    // 3. Update Simulated Moving Vehicles
+    this.syncMockdrillVehicles(data.agents);
+  }
+
+  private syncMockdrillVehicles(agents: AgentSnapshot[]): void {
+    const activeIds = new Set<string>();
+
+    for (const agent of agents) {
+      activeIds.add(agent.id);
+      let veh = this.vehiclePool.get(agent.id);
+      if (!veh) {
+        const mobility =
+          agent.category === 'fast' ? 'fast' :
+          agent.category === 'slow' ? 'slow' : 'standard';
+        veh = this.vehicleFactory.createVehicleGroup(mobility);
+        this.vehiclePool.set(agent.id, veh);
+        this.agentsGroup.add(veh);
+      }
+
+      if (agent.status === 'evacuated') {
+        veh.visible = false;
+        continue;
+      }
+
+      veh.visible = true;
+
+      // Check if we have exact road edge interpolation
+      if (agent.edge_u && agent.edge_v && agent.edge_progress !== undefined) {
+        const nA = this.nodeMap.get(agent.edge_u);
+        const nB = this.nodeMap.get(agent.edge_v);
+        if (nA && nB) {
+          const t = THREE.MathUtils.clamp(agent.edge_progress, 0, 1);
+          _vecA.set(nA.x, 0.34, nA.z);
+          _vecB.set(nB.x, 0.34, nB.z);
+          _vecDir.subVectors(_vecB, _vecA).normalize();
+          const laneOffsetX = -_vecDir.z * 0.32;
+          const laneOffsetZ = _vecDir.x * 0.32;
+
+          veh.position.set(
+            THREE.MathUtils.lerp(_vecA.x, _vecB.x, t) + laneOffsetX,
+            0.34,
+            THREE.MathUtils.lerp(_vecA.z, _vecB.z, t) + laneOffsetZ,
+          );
+          const heading = Math.atan2(_vecDir.x, -_vecDir.z);
+          veh.rotation.y = -heading + Math.PI / 2;
+          continue;
+        }
+      }
+
+      // Linear 2D map to 3D world coordinate transformation:
+      // worldX = (x_2d - 380) * 0.118
+      // worldZ = (y_2d - 260) * 0.104
+      const worldX = (agent.x - 380) * 0.118;
+      const worldZ = (agent.y - 260) * 0.104;
+      veh.position.set(worldX, 0.34, worldZ);
+    }
+
+    // Hide inactive or completed vehicles
+    for (const [id, veh] of this.vehiclePool.entries()) {
+      if (!activeIds.has(id)) {
+        veh.visible = false;
+      }
+    }
+  }
+
   public setLayerVisibility(layers: LayerVisibility): void {
     this.agentsGroup.visible = layers.agents;
     this.hazardGroup.visible = layers.hazard;
@@ -1222,7 +1442,7 @@ export class GreenfieldSceneManager {
 
       this.waterTex.offset.y -= dt * 0.14;
 
-      if (this.isPlaying) {
+      if (this.isPlaying && !this.isMockdrillMode) {
         this.simAccumulatorSec += dt * this.simSpeedMultiplier;
         if (this.simAccumulatorSec >= 0.18) {
           const stepSimSec = this.simAccumulatorSec * 3.8;

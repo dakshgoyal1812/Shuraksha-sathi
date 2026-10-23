@@ -78,7 +78,7 @@ export const ControlOverlay: React.FC<ControlOverlayProps> = ({
   const selectedEdge: GraphEdge | undefined =
     selectedTarget?.type === 'edge'
       ? snapshot.edges.find((e) => e.id === selectedTarget.id)
-      : snapshot.edges.find((e) => e.id === 'E01');
+      : snapshot.edges[0];
 
   const selectedNode: GraphNode | undefined =
     selectedTarget?.type === 'node'
@@ -89,11 +89,11 @@ export const ControlOverlay: React.FC<ControlOverlayProps> = ({
     ? calculateBPRMetrics(selectedEdge)
     : undefined;
 
-  const centralBridge = snapshot.edges.find((e) => e.id === 'E05');
+  const centralBridge = snapshot.edges.find((e) => e.id === 'R-10' || e.id === 'E05');
   const shelters = snapshot.nodes.filter((n) => n.category === 'shelter');
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-10 flex flex-col justify-between p-4">
+    <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-between p-4">
       {/* TOP BAR ROW: Left Zoom Controls + Center Layer Bar + Right Telemetry Summary */}
       <div className="flex items-start justify-between gap-4">
         {/* Top-Left Zoom & Reset Pill */}
@@ -471,7 +471,7 @@ export const ControlOverlay: React.FC<ControlOverlayProps> = ({
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => onToggleEdgeBlockage('E05')}
+                      onClick={() => onToggleEdgeBlockage(centralBridge?.id || 'R-10')}
                       className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap ${
                         centralBridge?.isBlocked
                           ? 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100'
@@ -538,7 +538,7 @@ export const ControlOverlay: React.FC<ControlOverlayProps> = ({
                     <select
                       id="corridor-select"
                       aria-label="Inspect Road Corridor"
-                      value={selectedEdge?.id ?? 'E01'}
+                      value={selectedEdge?.id ?? snapshot.edges[0]?.id ?? 'R-1'}
                       onChange={(e) =>
                         onSelectTarget({ type: 'edge', id: e.target.value })
                       }

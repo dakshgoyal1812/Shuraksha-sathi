@@ -10,6 +10,8 @@ import {
   LayerVisibility,
   SelectionTarget,
 } from '../three/GreenfieldScene';
+import { AgentSnapshot } from '../types/scenario';
+import { ZoomIn, ZoomOut, RotateCcw, Compass, Activity } from 'lucide-react';
 
 export interface Greenfield3DSceneProps {
   height?: string;
@@ -17,6 +19,12 @@ export interface Greenfield3DSceneProps {
   className?: string;
   onTargetSelect?: (target: SelectionTarget | null) => void;
   initialBlockedRoads?: string[];
+  mockdrillAgents?: AgentSnapshot[];
+  mockdrillRoadCongestion?: Record<string, number>;
+  mockdrillBottlenecks?: string[];
+  mockdrillShelterOccupancy?: Record<string, number>;
+  mockdrillBlockedRoads?: string[];
+  isMockdrillActive?: boolean;
 }
 
 export const Greenfield3DScene: React.FC<Greenfield3DSceneProps> = ({
@@ -25,6 +33,12 @@ export const Greenfield3DScene: React.FC<Greenfield3DSceneProps> = ({
   className = '',
   onTargetSelect,
   initialBlockedRoads = [],
+  mockdrillAgents,
+  mockdrillRoadCongestion,
+  mockdrillBottlenecks,
+  mockdrillShelterOccupancy,
+  mockdrillBlockedRoads,
+  isMockdrillActive = false,
 }) => {
   const canvasMountRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<EvacuationSimulationEngine | null>(null);
@@ -32,8 +46,9 @@ export const Greenfield3DScene: React.FC<Greenfield3DSceneProps> = ({
 
   if (!engineRef.current) {
     const engine = new EvacuationSimulationEngine();
-    if (initialBlockedRoads.length > 0) {
-      initialBlockedRoads.forEach((edgeId) => {
+    const blockedList = mockdrillBlockedRoads || initialBlockedRoads;
+    if (blockedList.length > 0) {
+      blockedList.forEach((edgeId) => {
         engine.toggleEdgeBlockage(edgeId);
       });
     }
@@ -54,7 +69,7 @@ export const Greenfield3DScene: React.FC<Greenfield3DSceneProps> = ({
   const [activePreset, setActivePreset] = useState<CameraPresetId>('isometric');
   const [selectedTarget, setSelectedTarget] = useState<SelectionTarget | null>({
     type: 'edge',
-    id: 'E01',
+    id: 'R-1',
   });
   const [contraFlowGlobal, setContraFlowGlobal] = useState<boolean>(false);
 
@@ -81,11 +96,44 @@ export const Greenfield3DScene: React.FC<Greenfield3DSceneProps> = ({
 
     sceneManagerRef.current = manager;
 
+    // Initial mockdrill sync if already active
+    if (isMockdrillActive || (mockdrillAgents && mockdrillAgents.length > 0)) {
+      manager.syncMockdrillState({
+        agents: mockdrillAgents || [],
+        roadCongestion: mockdrillRoadCongestion || {},
+        activeBottlenecks: mockdrillBottlenecks || [],
+        shelterOccupancies: mockdrillShelterOccupancy || {},
+        blockedRoads: mockdrillBlockedRoads || initialBlockedRoads || [],
+      });
+    }
+
     return () => {
       manager.dispose();
       sceneManagerRef.current = null;
     };
   }, []);
+
+  // Synchronize mockdrill simulation updates to 3D scene in real-time
+  useEffect(() => {
+    if (!sceneManagerRef.current) return;
+    if (isMockdrillActive || (mockdrillAgents && mockdrillAgents.length > 0)) {
+      sceneManagerRef.current.syncMockdrillState({
+        agents: mockdrillAgents || [],
+        roadCongestion: mockdrillRoadCongestion || {},
+        activeBottlenecks: mockdrillBottlenecks || [],
+        shelterOccupancies: mockdrillShelterOccupancy || {},
+        blockedRoads: mockdrillBlockedRoads || initialBlockedRoads || [],
+      });
+    }
+  }, [
+    isMockdrillActive,
+    mockdrillAgents,
+    mockdrillRoadCongestion,
+    mockdrillBottlenecks,
+    mockdrillShelterOccupancy,
+    mockdrillBlockedRoads,
+    initialBlockedRoads,
+  ]);
 
   const handleToggleLayer = useCallback((key: keyof LayerVisibility) => {
     setLayers((prev) => {
@@ -186,7 +234,80 @@ export const Greenfield3DScene: React.FC<Greenfield3DSceneProps> = ({
         className="h-full w-full"
       />
 
-      {/* Semantic HUD & Controls Overlay */}
+      {/* In-Card Camera Controls & Telemetry HUD when embedded in Simulation Workspace */}
+      {!showOverlay && (
+        <div className="absolute top-4 left-4 z-20 flex flex-col gap-2 pointer-events-auto">
+          {/* Camera View Presets */}
+          <div className="flex items-center gap-1 bg-white/95 backdrop-blur-md px-2 py-1.5 rounded-xl border border-slate-200 shadow-md text-xs font-semibold text-slate-700">
+            <Compass className="w-3.5 h-3.5 text-slate-500 mr-1" />
+            <button
+              onClick={() => handleSelectPreset('isometric')}
+              className={`px-2.5 py-1 rounded-lg transition ${
+                activePreset === 'isometric'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'hover:bg-slate-100 text-slate-600'
+              }`}
+            >
+              Isometric
+            </button>
+            <button
+              onClick={() => handleSelectPreset('topdown')}
+              className={`px-2.5 py-1 rounded-lg transition ${
+                activePreset === 'topdown'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'hover:bg-slate-100 text-slate-600'
+              }`}
+            >
+              Top-Down
+            </button>
+            <button
+              onClick={() => handleSelectPreset('chokepoint')}
+              className={`px-2.5 py-1 rounded-lg transition ${
+                activePreset === 'chokepoint'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'hover:bg-slate-100 text-slate-600'
+              }`}
+            >
+              Chokepoint
+            </button>
+          </div>
+
+          {/* Quick Zoom & Reset Buttons */}
+          <div className="flex items-center gap-1 bg-white/95 backdrop-blur-md p-1 rounded-xl border border-slate-200 shadow-md w-fit">
+            <button
+              onClick={() => handleZoom(0.8)}
+              title="Zoom In"
+              className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-700 transition"
+            >
+              <ZoomIn className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => handleZoom(1.25)}
+              title="Zoom Out"
+              className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-700 transition"
+            >
+              <ZoomOut className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => handleSelectPreset('isometric')}
+              title="Reset 3D Camera"
+              className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-700 transition"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Mockdrill Realtime Synchronizer Pill */}
+          {mockdrillAgents && mockdrillAgents.length > 0 && (
+            <div className="flex items-center gap-1.5 bg-emerald-950/80 backdrop-blur-md px-3 py-1 rounded-full border border-emerald-500/40 text-emerald-300 text-[11px] font-mono shadow-md w-fit">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>3D MOCKDRILL SYNC ({mockdrillAgents.filter((a) => a.status !== 'evacuated').length} ACTIVE VEHICLES)</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Full ControlOverlay (when showOverlay is explicitly enabled) */}
       {showOverlay && (
         <ControlOverlay
           snapshot={snapshot}

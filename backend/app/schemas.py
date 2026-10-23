@@ -158,6 +158,9 @@ class AgentSnapshot(BaseModel):
     y: float
     status: str  # waiting, moving, rerouting, evacuated, unreachable
     category: str
+    edge_u: Optional[str] = None
+    edge_v: Optional[str] = None
+    edge_progress: Optional[float] = None
 
 class SimulationStepSnapshot(BaseModel):
     step: int
