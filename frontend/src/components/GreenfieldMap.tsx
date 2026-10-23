@@ -16,8 +16,11 @@ import {
   MapPin,
   Car,
   X,
-  Compass
+  Compass,
+  Boxes,
+  Map as MapIcon
 } from 'lucide-react';
+import { Greenfield3DScene } from './Greenfield3DScene';
 
 interface GreenfieldMapProps {
   nodes: RoadNode[];
@@ -58,6 +61,7 @@ export const GreenfieldMap: React.FC<GreenfieldMapProps> = ({
   selectedShelterId,
   height = '620px',
 }) => {
+  const [viewMode, setViewMode] = useState<'3d' | '2d'>('3d');
   const [zoom, setZoom] = useState<number>(1);
   const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState<boolean>(false);
@@ -127,6 +131,32 @@ export const GreenfieldMap: React.FC<GreenfieldMapProps> = ({
     return '#38BDF8';                    // Normal flow
   };
 
+  if (viewMode === '3d') {
+    return (
+      <div className="relative w-full rounded-2xl overflow-hidden border border-[#E1E7EF] shadow-xs select-none" style={{ height }}>
+        {/* View Mode Switcher Pill */}
+        <div className="absolute top-4 right-4 z-30 flex items-center bg-white/95 backdrop-blur-md p-1 rounded-xl border border-slate-200 shadow-md gap-1 text-xs font-semibold">
+          <button
+            onClick={() => setViewMode('3d')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black text-white shadow-xs"
+          >
+            <Boxes className="w-3.5 h-3.5 text-emerald-400" />
+            <span>3D Realistic City</span>
+          </button>
+          <button
+            onClick={() => setViewMode('2d')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-700 hover:bg-slate-100 transition"
+          >
+            <MapIcon className="w-3.5 h-3.5 text-slate-500" />
+            <span>2D Tactical Map</span>
+          </button>
+        </div>
+
+        <Greenfield3DScene height={height} initialBlockedRoads={blockedRoads} />
+      </div>
+    );
+  }
+
   return (
     <div
       ref={containerRef}
@@ -137,6 +167,24 @@ export const GreenfieldMap: React.FC<GreenfieldMapProps> = ({
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
+      {/* View Mode Switcher Pill */}
+      <div className="absolute top-4 right-4 z-30 flex items-center bg-white/95 backdrop-blur-md p-1 rounded-xl border border-slate-200 shadow-md gap-1 text-xs font-semibold">
+        <button
+          onClick={() => setViewMode('3d')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-700 hover:bg-slate-100 transition"
+        >
+          <Boxes className="w-3.5 h-3.5 text-slate-500" />
+          <span>3D Realistic City</span>
+        </button>
+        <button
+          onClick={() => setViewMode('2d')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black text-white shadow-xs"
+        >
+          <MapIcon className="w-3.5 h-3.5 text-sky-400" />
+          <span>2D Tactical Map</span>
+        </button>
+      </div>
+
       {/* Map Control Buttons */}
       <div className="absolute top-4 left-4 z-20 flex flex-col gap-1.5 bg-white/95 backdrop-blur-md p-1.5 rounded-xl border border-[#E1E7EF] shadow-md">
         <button

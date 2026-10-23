@@ -16,6 +16,7 @@ import { ReportsPage } from './pages/ReportsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ArthaSetuStatsPage } from './pages/ArthaSetuStatsPage';
 import { LiveTrackingPage } from './pages/LiveTrackingPage';
+import { Greenfield3DPage } from './pages/Greenfield3DPage';
 import { SurakshaChatbot } from './components/SurakshaChatbot';
 
 
@@ -75,6 +76,8 @@ export function App() {
           <Route path="/scenarios/new" element={<ScenarioBuilderPage />} />
           <Route path="/scenarios/:id/edit" element={<ScenarioBuilderPage />} />
           <Route path="/simulation/:id" element={<SimulationWorkspacePage />} />
+          <Route path="/3d" element={<Greenfield3DPage />} />
+          <Route path="/simulation-3d" element={<Greenfield3DPage />} />
           <Route path="/shelters" element={<ShelterManagementPage />} />
           <Route path="/analytics/:id" element={<AnalyticsPage />} />
           <Route path="/compare" element={<ComparePage />} />

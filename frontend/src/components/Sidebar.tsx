@@ -11,7 +11,8 @@ import {
   FolderKanban,
   Settings,
   AlertTriangle,
-  Radio
+  Radio,
+  Boxes
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -31,6 +32,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navItems = [
     { name: 'Overview', to: '/dashboard', icon: LayoutDashboard },
     { name: 'Live Hazard Tracker', to: '/live-tracking', icon: Radio },
+    { name: '3D City Simulation', to: '/3d', icon: Boxes },
     { name: 'Scenario Builder', to: '/scenarios/new', icon: PlusCircle },
     { name: 'Simulation Workspace', to: simLink, icon: PlaySquare },
     { name: 'Shelters', to: '/shelters', icon: ShieldAlert },

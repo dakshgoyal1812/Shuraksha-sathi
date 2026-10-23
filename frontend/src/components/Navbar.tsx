@@ -7,7 +7,8 @@ import {
   AlertOctagon,
   ChevronDown,
   Menu,
-  CheckCircle2
+  CheckCircle2,
+  Boxes
 } from 'lucide-react';
 import { api } from '../services/api';
 import { ScenarioListItem } from '../types/scenario';
@@ -108,11 +109,20 @@ export const Navbar: React.FC<NavbarProps> = ({
         </Link>
       </div>
 
-      {/* Center: Simulated Environment Banner */}
-      <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-50 border border-slate-200 text-[11px] text-slate-700">
-        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span className="font-semibold text-slate-800">ENVIRONMENT:</span>
-        <span className="text-slate-900 font-mono font-medium">GREENFIELD CITY (SYNTHETIC)</span>
+      {/* Center: Simulated Environment Banner & 3D Simulation Shortcut */}
+      <div className="hidden md:flex items-center gap-2.5">
+        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-50 border border-slate-200 text-[11px] text-slate-700">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span className="font-semibold text-slate-800">ENVIRONMENT:</span>
+          <span className="text-slate-900 font-mono font-medium">GREENFIELD CITY</span>
+        </div>
+        <Link
+          to="/3d"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition hover:scale-105"
+        >
+          <Boxes className="w-3.5 h-3.5 text-emerald-400" />
+          <span>3D City Model</span>
+        </Link>
       </div>
 
       {/* Right: Scenario Switcher & Actions */}
