@@ -12,7 +12,12 @@ import {
   FALLBACK_ANALYTICS
 } from './mockData';
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
+const getApiBase = (): string => {
+  const envUrl = (import.meta.env.VITE_API_BASE_URL || '/api').trim().replace(/\/+$/, '');
+  if (!envUrl || envUrl === '/api') return '/api';
+  return envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`;
+};
+const API_BASE = getApiBase();
 
 // Fast in-memory cache for client hazard queries (3-minute TTL)
 const hazardsClientCache = new Map<string, { time: number; data: any }>();

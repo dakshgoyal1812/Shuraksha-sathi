@@ -1,0 +1,12 @@
+{
+  "name": "suraksha",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Suraksha - Intelligent Disaster Evacuation Planning Platform",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build",
+    "dev": "cd frontend && npm run dev",
+    "preview": "cd frontend && npm run preview",
+    "lint": "cd frontend && npm run lint"
+  }
+}

@@ -1,6 +1,6 @@
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from .database import engine, Base
@@ -40,24 +40,25 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS configuration
-origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "*"
-]
+# CORS configuration - supports Vercel, Render, custom domains, and local dev
+allowed_origins_env = os.environ.get("ALLOWED_ORIGINS", "").strip()
+if allowed_origins_env and allowed_origins_env != "*":
+    origins = [orig.strip() for orig in allowed_origins_env.split(",") if orig.strip()]
+    allow_credentials = True
+else:
+    origins = ["*"]
+    allow_credentials = False
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=True,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# API Root & Health endpoints
+# API Root & Health endpoints (supports Render /health and Vercel /api/health)
+@app.get("/")
 @app.get("/api")
 def api_root():
     return {
@@ -68,6 +69,7 @@ def api_root():
         "health": "/api/health"
     }
 
+@app.get("/health")
 @app.get("/api/health")
 def health_check():
     return {
@@ -87,4 +89,40 @@ app.include_router(reports.router)
 app.include_router(map_api.router)
 app.include_router(ai.router)
 app.include_router(weather.router)
+
+# Optional Static File Serving for unified deployments (e.g. Render Web Service or Docker)
+FRONTEND_DIST = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist")
+)
+if os.path.exists(FRONTEND_DIST):
+    from fastapi.staticfiles import StaticFiles
+    from fastapi.responses import FileResponse
+
+    assets_dir = os.path.join(FRONTEND_DIST, "assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_frontend(full_path: str):
+        # Do not intercept API or documentation routes
+        if (
+            full_path == "api"
+            or full_path.startswith("api/")
+            or full_path == "health"
+            or full_path.startswith("health/")
+            or full_path == "docs"
+            or full_path == "openapi.json"
+        ):
+            raise HTTPException(status_code=404, detail="Not Found")
+
+        target = os.path.join(FRONTEND_DIST, full_path)
+        if os.path.isfile(target):
+            return FileResponse(target)
+
+        index_file = os.path.join(FRONTEND_DIST, "index.html")
+        if os.path.isfile(index_file):
+            return FileResponse(index_file)
+
+        raise HTTPException(status_code=404, detail="Frontend asset not found")
+
 
