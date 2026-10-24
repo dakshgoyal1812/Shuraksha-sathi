@@ -317,46 +317,42 @@ export class GreenfieldSceneManager {
       const distToRiver = Math.abs(vx - riverCenter);
 
       // Distance outside the playable city basin
-      const dx = Math.max(0, Math.abs(vx) - 44);
-      const dz = Math.max(0, Math.abs(vz) - 31);
+      const dx = Math.max(0, Math.abs(vx) - 46);
+      const dz = Math.max(0, Math.abs(vz) - 34);
       const rimDist = Math.hypot(dx, dz);
 
       let vy = 0;
-      if (distToRiver < 5.2) {
-        // Carved deep riverbed channel
-        vy = -0.65 * Math.cos((distToRiver / 5.2) * (Math.PI / 2));
+      if (distToRiver < 5.0) {
+        // Carved gentle river channel
+        vy = -0.45 * Math.cos((distToRiver / 5.0) * (Math.PI / 2));
       } else if (rimDist > 0) {
-        // Surrounding mountain hills and scenic ridges
+        // Soft rolling hills (no jagged skeletal cliffs / no panjar)
         const hillWave =
-          Math.sin(vx * 0.08) * Math.cos(vz * 0.08) * 2.4 +
-          Math.sin(vx * 0.17 + vz * 0.13) * 1.1;
-        vy =
-          Math.min(14.5, Math.pow(rimDist * 0.14, 1.45) * 2.6) +
-          Math.max(0, hillWave * Math.min(1, rimDist / 14));
+          Math.sin(vx * 0.06) * Math.cos(vz * 0.06) * 0.75 +
+          Math.sin(vx * 0.12 + vz * 0.08) * 0.35;
+        const rollOff = Math.min(1.0, rimDist / 30.0);
+        vy = Math.min(2.8, (rimDist * 0.06) + (hillWave * rollOff));
       }
 
       posAttr.setY(i, vy);
 
-      // Vertex Color Biome Stratification
-      if (vy < -0.15) {
-        // Riverbank stone & wet sand
-        col.setHex(0x64748b);
-      } else if (distToRiver < 8.5 && rimDist === 0) {
-        // Lush riparian riverbank grass
-        col.setHex(0x4d7c0f);
-      } else if (vy < 1.2) {
-        // Greenfield Valley Meadow & Urban Parkland
-        const noise = (Math.sin(vx * 0.25) * Math.cos(vz * 0.25) + 1) * 0.5;
-        col.setHex(noise > 0.5 ? 0x5c8d46 : 0x699b52);
-      } else if (vy < 5.2) {
-        // Mountain Foothills Forest Green
-        col.setHex(0x3f6212);
-      } else if (vy < 9.5) {
-        // Exposed Granite / Limestone Mountain Slopes
-        col.setHex(0x78716c);
+      // Smooth, natural lush biome gradient (Greenfield Valley parklands & soft forested hills)
+      if (vy < -0.1) {
+        // Riverbed sand & stone
+        col.setHex(0x526b78);
+      } else if (distToRiver < 7.5 && rimDist === 0) {
+        // Lush riverbank grass
+        col.setHex(0x40916c);
+      } else if (vy < 0.9) {
+        // Valley meadow green
+        const n = (Math.sin(vx * 0.2) * Math.cos(vz * 0.2) + 1) * 0.5;
+        col.setHex(n > 0.5 ? 0x52b788 : 0x74c69d);
+      } else if (vy < 1.8) {
+        // Foothill woodland green
+        col.setHex(0x2d6a4f);
       } else {
-        // High Alpine Ridge Peaks
-        col.setHex(0xd6d3d1);
+        // High canopy deep forest green
+        col.setHex(0x1b4332);
       }
 
       colors[i * 3] = col.r;

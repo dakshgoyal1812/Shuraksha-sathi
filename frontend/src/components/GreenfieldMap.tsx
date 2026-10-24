@@ -40,6 +40,7 @@ interface GreenfieldMapProps {
   selectedRoadId?: string;
   selectedShelterId?: string;
   height?: string;
+  defaultViewMode?: '3d' | '2d';
 }
 
 export const GreenfieldMap: React.FC<GreenfieldMapProps> = ({
@@ -60,8 +61,9 @@ export const GreenfieldMap: React.FC<GreenfieldMapProps> = ({
   selectedRoadId,
   selectedShelterId,
   height = '620px',
+  defaultViewMode = '2d',
 }) => {
-  const [viewMode, setViewMode] = useState<'3d' | '2d'>('3d');
+  const [viewMode, setViewMode] = useState<'3d' | '2d'>(defaultViewMode);
   const [zoom, setZoom] = useState<number>(1);
   const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState<boolean>(false);
@@ -177,25 +179,7 @@ export const GreenfieldMap: React.FC<GreenfieldMapProps> = ({
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
-      {/* View Mode Switcher Pill */}
-      <div className="absolute top-4 right-4 z-30 flex items-center bg-white/95 backdrop-blur-md p-1 rounded-xl border border-slate-200 shadow-md gap-1 text-xs font-semibold">
-        <button
-          onClick={() => setViewMode('3d')}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-700 hover:bg-slate-100 transition"
-        >
-          <Boxes className="w-3.5 h-3.5 text-slate-500" />
-          <span>3D Realistic City</span>
-        </button>
-        <button
-          onClick={() => setViewMode('2d')}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black text-white shadow-xs"
-        >
-          <MapIcon className="w-3.5 h-3.5 text-sky-400" />
-          <span>2D Tactical Map</span>
-        </button>
-      </div>
-
-      {/* Map Control Buttons */}
+      {/* Map Control Buttons (Top-Left) */}
       <div className="absolute top-4 left-4 z-20 flex flex-col gap-1.5 bg-white/95 backdrop-blur-md p-1.5 rounded-xl border border-[#E1E7EF] shadow-md">
         <button
           onClick={() => handleZoom(0.2)}
@@ -220,45 +204,66 @@ export const GreenfieldMap: React.FC<GreenfieldMapProps> = ({
         </button>
       </div>
 
-      {/* Layer Visibility Toggles */}
-      <div className="absolute top-4 right-4 z-20 flex items-center gap-2.5 bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-xl border border-[#E1E7EF] text-xs text-[#0F172A] shadow-md font-medium">
-        <Layers className="w-4 h-4 text-slate-700 mr-0.5" />
-        <label className="flex items-center gap-1.5 cursor-pointer hover:text-black">
-          <input
-            type="checkbox"
-            checked={showAgents}
-            onChange={(e) => setShowAgents(e.target.checked)}
-            className="rounded border-slate-300 text-slate-900 focus:ring-0"
-          />
-          Agents ({agents.length})
-        </label>
-        <span className="text-slate-300">|</span>
-        <label className="flex items-center gap-1.5 cursor-pointer hover:text-black">
-          <input
-            type="checkbox"
-            checked={showHazard}
-            onChange={(e) => setShowHazard(e.target.checked)}
-            className="rounded border-slate-300 text-rose-600 focus:ring-0"
-          />
-          Hazard
-        </label>
-        <span className="text-slate-300">|</span>
-        <label className="flex items-center gap-1.5 cursor-pointer hover:text-black">
-          <input
-            type="checkbox"
-            checked={showShelters}
-            onChange={(e) => setShowShelters(e.target.checked)}
-            className="rounded border-slate-300 text-emerald-600 focus:ring-0"
-          />
-          Shelters
-        </label>
-        <span className="text-slate-300">|</span>
-        <button
-          onClick={() => setShowLegend(!showLegend)}
-          className="text-xs text-slate-900 font-semibold hover:underline ml-0.5"
-        >
-          {showLegend ? 'Hide Legend' : 'Legend'}
-        </button>
+      {/* Top-Right Unified Action Header: Layer Toggles + View Mode Switcher */}
+      <div className="absolute top-4 right-4 z-30 flex items-center gap-2">
+        {/* Layer Visibility Toggles */}
+        <div className="hidden sm:flex items-center gap-2.5 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-[#E1E7EF] text-xs text-[#0F172A] shadow-md font-medium">
+          <Layers className="w-4 h-4 text-slate-700 mr-0.5" />
+          <label className="flex items-center gap-1.5 cursor-pointer hover:text-black">
+            <input
+              type="checkbox"
+              checked={showAgents}
+              onChange={(e) => setShowAgents(e.target.checked)}
+              className="rounded border-slate-300 text-slate-900 focus:ring-0"
+            />
+            Agents ({agents.length})
+          </label>
+          <span className="text-slate-300">|</span>
+          <label className="flex items-center gap-1.5 cursor-pointer hover:text-black">
+            <input
+              type="checkbox"
+              checked={showHazard}
+              onChange={(e) => setShowHazard(e.target.checked)}
+              className="rounded border-slate-300 text-rose-600 focus:ring-0"
+            />
+            Hazard
+          </label>
+          <span className="text-slate-300">|</span>
+          <label className="flex items-center gap-1.5 cursor-pointer hover:text-black">
+            <input
+              type="checkbox"
+              checked={showShelters}
+              onChange={(e) => setShowShelters(e.target.checked)}
+              className="rounded border-slate-300 text-emerald-600 focus:ring-0"
+            />
+            Shelters
+          </label>
+          <span className="text-slate-300">|</span>
+          <button
+            onClick={() => setShowLegend(!showLegend)}
+            className="text-xs text-slate-900 font-semibold hover:underline ml-0.5"
+          >
+            {showLegend ? 'Hide Legend' : 'Legend'}
+          </button>
+        </div>
+
+        {/* View Mode Switcher Pill */}
+        <div className="flex items-center bg-white/95 backdrop-blur-md p-1 rounded-xl border border-slate-200 shadow-md gap-1 text-xs font-semibold">
+          <button
+            onClick={() => setViewMode('3d')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-700 hover:bg-slate-100 transition"
+          >
+            <Boxes className="w-3.5 h-3.5 text-slate-500" />
+            <span>3D Realistic City</span>
+          </button>
+          <button
+            onClick={() => setViewMode('2d')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black text-white shadow-xs"
+          >
+            <MapIcon className="w-3.5 h-3.5 text-sky-400" />
+            <span>2D Tactical Map</span>
+          </button>
+        </div>
       </div>
 
       {/* Town Branding Badge */}

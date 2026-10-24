@@ -667,86 +667,38 @@ export function createBridgeTrussAndBarricade(
   });
 
   // 1 & 2. Twin Reinforced Concrete River Piers extending down into the riverbed
-  const pierGeo = new THREE.BoxGeometry(0.65, 1.4, 2.5);
-  for (const px of [-archSpan * 0.32, archSpan * 0.32]) {
+  // 1 & 2. Reinforced Concrete River Piers extending down into the riverbed
+  const pierGeo = new THREE.BoxGeometry(0.7, 1.2, 2.4);
+  for (const px of [-archSpan * 0.3, archSpan * 0.3]) {
     const pier = new THREE.Mesh(pierGeo, concretePierMat);
-    pier.position.set(px, -0.45, 0);
+    pier.position.set(px, -0.4, 0);
     pier.castShadow = true;
     pier.receiveShadow = true;
     group.add(pier);
-
-    // H-Frame Suspension Towers rising above the piers
-    const towerLeft = new THREE.Mesh(
-      new THREE.BoxGeometry(0.28, 2.7, 0.28),
-      steelMat,
-    );
-    towerLeft.position.set(px, 1.25, -1.05);
-    towerLeft.castShadow = true;
-    group.add(towerLeft);
-
-    const towerRight = new THREE.Mesh(
-      new THREE.BoxGeometry(0.28, 2.7, 0.28),
-      steelMat,
-    );
-    towerRight.position.set(px, 1.25, 1.05);
-    towerRight.castShadow = true;
-    group.add(towerRight);
-
-    const crossBeam = new THREE.Mesh(
-      new THREE.BoxGeometry(0.24, 0.24, 2.3),
-      steelMat,
-    );
-    crossBeam.position.set(px, 2.25, 0);
-    group.add(crossBeam);
   }
 
-  // 3 & 4. Parabolic Steel Suspension Arches / Cables along both sides of the bridge deck
+  // 3 & 4. Sleek Modern Bridge Parapets & Guardrails along both sides of the bridge deck
+  const railGeo = new THREE.BoxGeometry(archSpan, 0.35, 0.12);
   for (const side of [-1.05, 1.05]) {
-    const curve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(-archSpan / 2, 0.2, side),
-      new THREE.Vector3(-archSpan * 0.32, 2.45, side),
-      new THREE.Vector3(0, 1.15, side),
-      new THREE.Vector3(archSpan * 0.32, 2.45, side),
-      new THREE.Vector3(archSpan / 2, 0.2, side),
-    ]);
-    const tubeGeo = new THREE.TubeGeometry(curve, 24, 0.075, 8, false);
-    const archMesh = new THREE.Mesh(tubeGeo, steelMat);
-    archMesh.castShadow = true;
-    group.add(archMesh);
+    const rail = new THREE.Mesh(railGeo, steelMat);
+    rail.position.set(0, 0.22, side);
+    rail.castShadow = true;
+    group.add(rail);
   }
 
-  // 5. Blocked Bridge Emergency Hazard Barricades & 3D Red 'X'
+  // 5. Blocked Bridge Road Barricades (Clean civil engineering safety barriers)
   if (isBlocked) {
-    const xBarMat = new THREE.MeshStandardMaterial({
-      color: 0xdc2626,
-      emissive: 0x991b1b,
-      emissiveIntensity: 0.45,
-      roughness: 0.25,
-    });
-    const barGeo = new THREE.BoxGeometry(2.7, 0.36, 0.36);
-
-    const bar1 = new THREE.Mesh(barGeo, xBarMat);
-    bar1.position.set(0, 1.85, 0);
-    bar1.rotation.z = Math.PI / 4;
-    group.add(bar1);
-
-    const bar2 = new THREE.Mesh(barGeo, xBarMat);
-    bar2.position.set(0, 1.85, 0);
-    bar2.rotation.z = -Math.PI / 4;
-    group.add(bar2);
-
-    // Striped concrete Jersey barriers blocking both bridge approaches
     const blockGeo = new THREE.BoxGeometry(0.45, 0.5, 1.9);
     const blockMat = new THREE.MeshStandardMaterial({
       color: 0xef4444,
       roughness: 0.55,
     });
-    const bLeft = new THREE.Mesh(blockGeo, blockMat);
-    bLeft.position.set(-1.2, 0.32, 0);
-    group.add(bLeft);
-    const bRight = new THREE.Mesh(blockGeo, blockMat);
-    bRight.position.set(1.2, 0.32, 0);
-    group.add(bRight);
+    for (const bx of [-1.3, 1.3]) {
+      const b = new THREE.Mesh(blockGeo, blockMat);
+      b.position.set(bx, 0.32, 0);
+      b.castShadow = true;
+      group.add(b);
+    }
   }
 
   return group;

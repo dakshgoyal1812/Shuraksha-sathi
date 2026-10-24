@@ -159,6 +159,7 @@ export const LandingPage: React.FC = () => {
                   hazardZone={mapData.hazard_zone}
                   blockedRoads={["R-10", "R-1"]}
                   height="480px"
+                  defaultViewMode="2d"
                 />
               </div>
             )}
