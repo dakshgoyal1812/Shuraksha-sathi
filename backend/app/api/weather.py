@@ -39,12 +39,6 @@ _wildfires_cache: Dict[str, Any] = {
     "events": []
 }
 
-# In-memory cache for NASA Global Landslide Catalog from ArcGIS FeatureServer
-_landslides_cache: Dict[str, Any] = {
-    "timestamp": 0.0,
-    "features": []
-}
-
 def _fetch_json(url: str, timeout: float = 4.5, headers: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
     """Universal high-speed JSON fetcher with SSL tolerance and bounded timeout."""
     ctx = ssl.create_default_context()
@@ -127,39 +121,6 @@ def fetch_nasa_eonet_wildfires() -> List[Dict[str, Any]]:
         return raw_events
     return _wildfires_cache.get("events", [])
 
-def fetch_nasa_landslides(lat: float, lon: float, radius_km: float = 300.0) -> List[Dict[str, Any]]:
-    """
-    Queries NASA Global Landslide Catalog from ArcGIS REST FeatureServer.
-    Spatial query searches by coordinates and distance perimeter.
-    """
-    radius_m = int(radius_km * 1000)
-    spatial_url = (
-        f"https://services1.arcgis.com/yFGHRCyBneULM8ci/arcgis/rest/services/nasa_global_landslide_catalog_point/FeatureServer/0/query"
-        f"?where=1%3D1&geometry={lon},{lat}&geometryType=esriGeometryPoint&distance={radius_m}&units=esriSRUnit_Meter"
-        f"&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&f=geojson&resultRecordCount=35"
-    )
-    spatial_data = _fetch_json(spatial_url, timeout=3.5)
-    features = spatial_data.get("features", [])
-    if features:
-        return features
-
-    # Fallback to broader recent catalog query if spatial returned empty or timed out
-    now = time.time()
-    if _landslides_cache["features"] and (now - _landslides_cache["timestamp"] < 900.0):
-        return _landslides_cache["features"]
-
-    fallback_url = (
-        "https://services1.arcgis.com/yFGHRCyBneULM8ci/arcgis/rest/services/nasa_global_landslide_catalog_point/FeatureServer/0/query"
-        "?where=1%3D1&outFields=*&f=geojson&resultRecordCount=50"
-    )
-    fallback_data = _fetch_json(fallback_url, timeout=3.5)
-    feats = fallback_data.get("features", [])
-    if feats:
-        _landslides_cache["timestamp"] = now
-        _landslides_cache["features"] = feats
-        return feats
-    return _landslides_cache.get("features", [])
-
 def parse_air_pollution(data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Parses real-time ambient particulate and gaseous air pollution from OpenWeather Air Pollution API
@@ -239,7 +200,6 @@ def check_weather_hazards(
     2. Air Pollution (PM2.5, PM10, AQI)
     3. NASA EONET Severe Storms & Cyclone Proximity
     4. NASA EONET Active Wildfires & Thermal Anomalies
-    5. NASA ArcGIS Global Landslide Vulnerability Catalog
     """
     now = time.time()
     cache_key = f"{round(lat, 2)}:{round(lon, 2)}"
@@ -255,21 +215,19 @@ def check_weather_hazards(
     forecast_url = f"https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={api_key}&units=metric"
     pollution_url = f"http://api.openweathermap.org/data/2.5/air_pollution?lat={lat}&lon={lon}&appid={api_key}"
 
-    # Execute all 6 external data queries simultaneously with ThreadPoolExecutor
-    with ThreadPoolExecutor(max_workers=6) as executor:
+    # Execute all 5 external data queries simultaneously with ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=5) as executor:
         fut_current = executor.submit(_fetch_json, current_url, 4.0)
         fut_forecast = executor.submit(_fetch_json, forecast_url, 4.0)
         fut_pollution = executor.submit(_fetch_json, pollution_url, 4.0)
         fut_storms = executor.submit(fetch_nasa_eonet_severe_storms)
         fut_wildfires = executor.submit(fetch_nasa_eonet_wildfires)
-        fut_landslides = executor.submit(fetch_nasa_landslides, lat, lon, 300.0)
 
         current_data = fut_current.result()
         forecast_data = fut_forecast.result()
         raw_pollution = fut_pollution.result()
         raw_storms = fut_storms.result()
         raw_wildfires = fut_wildfires.result()
-        raw_landslides = fut_landslides.result()
 
     if not current_data or not current_data.get("main"):
         raise HTTPException(status_code=502, detail="Failed to query OpenWeatherMap API telemetry.")
@@ -548,91 +506,6 @@ def check_weather_hazards(
         "all_active_wildfires": parsed_wildfires
     }
 
-    # 7. Landslide Evaluation (NASA Global Landslide Catalog from ArcGIS REST API)
-    parsed_landslides: List[Dict[str, Any]] = []
-
-    for feat in raw_landslides:
-        props = feat.get("properties", {})
-        geom = feat.get("geometry", {})
-        coords = geom.get("coordinates", [])
-        if len(coords) >= 2:
-            l_lon, l_lat = coords[0], coords[1]
-        else:
-            l_lat = props.get("latitude")
-            l_lon = props.get("longitude")
-
-        if l_lat is not None and l_lon is not None:
-            dist = haversine_km(lat, lon, float(l_lat), float(l_lon))
-            parsed_landslides.append({
-                "id": props.get("FID") or props.get("event_id") or f"ls_{len(parsed_landslides)}",
-                "title": props.get("event_titl") or props.get("location_d") or "Historical Landslide Zone",
-                "category": props.get("landslide_") or "landslide",
-                "trigger": props.get("landslide1") or "downpour / continuous rainfall",
-                "size": props.get("landslid_1") or "medium",
-                "distance_km": dist,
-                "lat": float(l_lat),
-                "lon": float(l_lon),
-                "country": props.get("country_na", "India"),
-                "fatalities": props.get("fatality_c", 0)
-            })
-
-    parsed_landslides.sort(key=lambda l: l["distance_km"])
-    nearest_landslide = parsed_landslides[0] if parsed_landslides else None
-    landslide_dist = nearest_landslide["distance_km"] if nearest_landslide else 999999.0
-
-    # Risk factoring precipitation + slope historical vulnerability
-    is_heavy_rain = (rain_1h >= 10.0 or rain_24h_forecast >= 45.0 or total_rain_metric >= 50.0)
-    is_moderate_rain = (rain_1h >= 4.0 or rain_24h_forecast >= 20.0 or total_rain_metric >= 25.0)
-
-    if landslide_dist <= 35.0 and is_heavy_rain:
-        landslide_status = "danger"
-        landslide_level = "CRITICAL LANDSLIDE / MUDSLIDE ALERT"
-        landslide_title = f"High Mudslide & Slope Failure Risk: {nearest_landslide['title']}"
-        landslide_message = (
-            f"Heavy continuous downpour ({total_rain_metric:.1f} mm metric) combined with close proximity "
-            f"({nearest_landslide['distance_km']} km) to historically vulnerable landslide terrain '{nearest_landslide['title']}'. "
-            "High threat of mudslides, soil saturation collapse, and highway blockages. Immediate hillside evacuation advised."
-        )
-    elif landslide_dist <= 80.0 or (landslide_dist <= 180.0 and is_moderate_rain):
-        landslide_status = "caution"
-        landslide_level = "LANDSLIDE SUSCEPTIBILITY WATCH"
-        if nearest_landslide:
-            landslide_title = f"Elevated Slope Instability Advisory: {nearest_landslide['title']}"
-            landslide_message = (
-                f"Your location is within {nearest_landslide['distance_km']} km of cataloged NASA landslide terrain '{nearest_landslide['title']}'. "
-                f"Rainfall forecast ({rain_24h_forecast:.1f} mm/24h) may soften vulnerable mountain cuts and embankment slopes. "
-                "Exercise high vigilance on unpaved ghat roads and mountain passages."
-            )
-        else:
-            landslide_title = "Rain-Induced Embankment Caution"
-            landslide_message = (
-                f"Active precipitation ({total_rain_metric:.1f} mm) recorded. Stay watchful around steep soil slopes, "
-                "drainage retaining walls, and highway embankments."
-            )
-    else:
-        landslide_status = "safe"
-        landslide_level = "SAFE (STABLE TERRAIN / NO ACTIVE SLIPPAGE)"
-        nearest_desc = (
-            f"Nearest cataloged NASA landslide incident is {nearest_landslide['distance_km']:,} km away ('{nearest_landslide['title']}')."
-            if nearest_landslide
-            else "No slope instability recorded in historical telemetry database."
-        )
-        landslide_title = "Stable Terrain & Low Landslide Hazard"
-        landslide_message = (
-            f"No immediate slope failure or active mudslide threat in your region. {nearest_desc} "
-            "Local precipitation accumulation remains well below soil saturation failure thresholds."
-        )
-
-    landslide_assessment = {
-        "status": landslide_status,
-        "level": landslide_level,
-        "title": landslide_title,
-        "message": landslide_message,
-        "nearest_landslide": nearest_landslide,
-        "catalog_incidents_count": len(parsed_landslides),
-        "nearby_landslides": parsed_landslides[:20]
-    }
-
     location_name = current_data.get("name", "Current Location")
     sys_info = current_data.get("sys", {})
     country = sys_info.get("country", "")
@@ -675,8 +548,7 @@ def check_weather_hazards(
         },
         "cyclone_assessment": cyclone_assessment,
         "air_pollution": air_pollution,
-        "wildfire_assessment": wildfire_assessment,
-        "landslide_assessment": landslide_assessment
+        "wildfire_assessment": wildfire_assessment
     }
 
     # Store in fast in-memory spatial cache

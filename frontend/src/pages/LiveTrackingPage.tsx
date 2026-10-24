@@ -32,7 +32,6 @@ import {
   CloudLightning,
   Waves,
   Flame,
-  Mountain,
   CloudFog
 } from 'lucide-react';
 import { api } from '../services/api';
@@ -149,29 +148,6 @@ interface WildfireAssessment {
   all_active_wildfires: WildfireEvent[];
 }
 
-interface LandslideIncident {
-  id: string | number;
-  title: string;
-  category: string;
-  trigger: string;
-  size: string;
-  distance_km: number;
-  lat: number;
-  lon: number;
-  country: string;
-  fatalities: number;
-}
-
-interface LandslideAssessment {
-  status: 'safe' | 'caution' | 'danger';
-  level: string;
-  title: string;
-  message: string;
-  nearest_landslide?: LandslideIncident | null;
-  catalog_incidents_count: number;
-  nearby_landslides: LandslideIncident[];
-}
-
 // Haversine formula to calculate accurate distance between two GPS coordinates in kilometers
 function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371; // Earth's radius in km
@@ -261,20 +237,18 @@ export const LiveTrackingPage: React.FC = () => {
   const [selectedQuake, setSelectedQuake] = useState<Earthquake | null>(null);
   const [protectionAssessment, setProtectionAssessment] = useState<ProtectionAssessment | null>(null);
 
-  // Weather, Flood, Drought, Cyclone, Air Pollution, Wildfire & Landslide States
+  // Weather, Flood, Drought, Cyclone, Air Pollution & Wildfire States
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [floodAssessment, setFloodAssessment] = useState<HazardAssessment | null>(null);
   const [droughtAssessment, setDroughtAssessment] = useState<HazardAssessment | null>(null);
   const [cycloneAssessment, setCycloneAssessment] = useState<CycloneAssessment | null>(null);
   const [airPollution, setAirPollution] = useState<AirPollutionData | null>(null);
   const [wildfireAssessment, setWildfireAssessment] = useState<WildfireAssessment | null>(null);
-  const [landslideAssessment, setLandslideAssessment] = useState<LandslideAssessment | null>(null);
 
   const [selectedCyclone, setSelectedCyclone] = useState<CycloneStorm | null>(null);
   const [selectedWildfire, setSelectedWildfire] = useState<WildfireEvent | null>(null);
-  const [selectedLandslide, setSelectedLandslide] = useState<LandslideIncident | null>(null);
 
-  const [activeSidebarTab, setActiveSidebarTab] = useState<'quakes' | 'cyclones' | 'wildfires' | 'landslides'>('quakes');
+  const [activeSidebarTab, setActiveSidebarTab] = useState<'quakes' | 'cyclones' | 'wildfires'>('quakes');
   const [rightPanelMode, setRightPanelMode] = useState<'tests' | 'feeds'>('tests');
   const [isLoadingWeather, setIsLoadingWeather] = useState<boolean>(false);
 
@@ -287,12 +261,10 @@ export const LiveTrackingPage: React.FC = () => {
   const earthquakeLayerRef = useRef<L.LayerGroup | null>(null);
   const cycloneLayerRef = useRef<L.LayerGroup | null>(null);
   const wildfireLayerRef = useRef<L.LayerGroup | null>(null);
-  const landslideLayerRef = useRef<L.LayerGroup | null>(null);
   const watchIdRef = useRef<number | null>(null);
   const quakeMarkersMapRef = useRef<Map<string, L.CircleMarker>>(new Map());
   const cycloneMarkersMapRef = useRef<Map<string, L.Marker>>(new Map());
   const wildfireMarkersMapRef = useRef<Map<string, L.Marker>>(new Map());
-  const landslideMarkersMapRef = useRef<Map<string | number, L.Marker>>(new Map());
 
   // 1. Initialize Leaflet Map
   useEffect(() => {
@@ -318,8 +290,6 @@ export const LiveTrackingPage: React.FC = () => {
       cycloneLayerRef.current = cycLayer;
       const wfLayer = L.layerGroup().addTo(map);
       wildfireLayerRef.current = wfLayer;
-      const lsLayer = L.layerGroup().addTo(map);
-      landslideLayerRef.current = lsLayer;
       mapInstanceRef.current = map;
 
       // Force initial size recalculation
@@ -429,7 +399,6 @@ export const LiveTrackingPage: React.FC = () => {
           setCycloneAssessment(data.cyclone_assessment);
           setAirPollution(data.air_pollution);
           setWildfireAssessment(data.wildfire_assessment);
-          setLandslideAssessment(data.landslide_assessment);
 
           // Plot NASA EONET Active Cyclones / Severe Storms on Map
           if (cycloneLayerRef.current) {
@@ -577,88 +546,20 @@ export const LiveTrackingPage: React.FC = () => {
             });
           }
 
-          // Plot NASA Landslide Catalog Incidents on Map
-          if (landslideLayerRef.current) {
-            landslideLayerRef.current.clearLayers();
-            landslideMarkersMapRef.current.clear();
-
-            const landslides: LandslideIncident[] = data.landslide_assessment?.nearby_landslides || [];
-            landslides.forEach((ls) => {
-              const markerColor = ls.distance_km <= 35 ? '#B91C1C' : ls.distance_km <= 100 ? '#C2410C' : '#92400E';
-
-              const customIcon = L.divIcon({
-                className: 'custom-landslide-div-icon',
-                html: `
-                  <div style="
-                    width: 28px;
-                    height: 28px;
-                    border-radius: 50%;
-                    background: ${markerColor};
-                    box-shadow: 0 0 10px ${markerColor}AA;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: white;
-                    font-size: 14px;
-                    cursor: pointer;
-                    border: 2px solid #FFFFFF;
-                  " title="${ls.title}">
-                    🏔️
-                  </div>
-                `,
-                iconSize: [28, 28],
-                iconAnchor: [14, 14],
-              });
-
-              const marker = L.marker([ls.lat, ls.lon], { icon: customIcon });
-
-              marker.bindPopup(`
-                <div style="font-family: system-ui, sans-serif; font-size: 13px; line-height: 1.4; min-width: 240px;">
-                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid #E2E8F0; padding-bottom: 4px;">
-                    <span style="font-weight: 800; color: #0F172A; font-size: 13px;">🏔️ ${ls.title}</span>
-                    <span style="background: ${markerColor}; color: #FFFFFF; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px;">
-                      ${ls.size || 'Medium'} Size
-                    </span>
-                  </div>
-                  <div style="color: #1E293B; margin-bottom: 3px;"><b>Category:</b> ${ls.category}</div>
-                  <div style="color: #1E293B; margin-bottom: 3px;"><b>Trigger Factor:</b> ${ls.trigger}</div>
-                  ${ls.fatalities ? `<div style="color: #DC2626; font-size: 11px; margin-bottom: 2px;"><b>Fatalities Recorded:</b> ${ls.fatalities}</div>` : ''}
-                  <div style="color: #64748B; font-size: 11px; margin-bottom: 2px;"><b>Coordinates:</b> ${ls.lat.toFixed(2)}°, ${ls.lon.toFixed(2)}° (${ls.country})</div>
-                  <div style="color: #9A3412; font-weight: 700; font-size: 12px; margin-top: 5px; padding-top: 5px; border-top: 1px dashed #CBD5E1;">
-                    📍 Distance from your position: ${ls.distance_km.toLocaleString()} km
-                  </div>
-                </div>
-              `);
-
-              marker.on('click', () => {
-                setSelectedLandslide(ls);
-                setActiveSidebarTab('landslides');
-                setRightPanelMode('feeds');
-              });
-
-              if (landslideLayerRef.current) {
-                landslideLayerRef.current.addLayer(marker);
-              }
-              landslideMarkersMapRef.current.set(ls.id, marker);
-            });
-          }
-
           if (soundEnabled) {
             const isDanger =
               data.flood_assessment?.status === 'danger' ||
               data.drought_assessment?.status === 'danger' ||
               data.cyclone_assessment?.status === 'danger' ||
               data.air_pollution?.status === 'danger' ||
-              data.wildfire_assessment?.status === 'danger' ||
-              data.landslide_assessment?.status === 'danger';
+              data.wildfire_assessment?.status === 'danger';
 
             const isCaution =
               data.flood_assessment?.status === 'caution' ||
               data.drought_assessment?.status === 'caution' ||
               data.cyclone_assessment?.status === 'caution' ||
               data.air_pollution?.status === 'caution' ||
-              data.wildfire_assessment?.status === 'caution' ||
-              data.landslide_assessment?.status === 'caution';
+              data.wildfire_assessment?.status === 'caution';
 
             if (isDanger) {
               playEmergencyAlarm('danger');
@@ -1100,18 +1001,6 @@ export const LiveTrackingPage: React.FC = () => {
     }
   };
 
-  // Select a landslide from list
-  const handleSelectLandslide = (ls: LandslideIncident) => {
-    setSelectedLandslide(ls);
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.flyTo([ls.lat, ls.lon], 8, { duration: 1.5 });
-      const marker = landslideMarkersMapRef.current.get(ls.id);
-      if (marker) {
-        marker.openPopup();
-      }
-    }
-  };
-
   // Apply filters
   const handleApplyFilters = () => {
     if (userLocation) {
@@ -1126,27 +1015,25 @@ export const LiveTrackingPage: React.FC = () => {
     }
   };
 
-  // Determine overall worst hazard level among all 7 Pillars:
-  // Earthquake, Cyclone/Gale, Flood, Drought, Air Pollution, Wildfires, Landslides
+  // Determine overall worst hazard level among all 6 Pillars:
+  // Earthquake, Cyclone/Gale, Flood, Drought, Air Pollution, Wildfires
   const worstHazardStatus = (
     protectionAssessment?.status === 'danger' ||
     cycloneAssessment?.status === 'danger' ||
     floodAssessment?.status === 'danger' ||
     droughtAssessment?.status === 'danger' ||
     airPollution?.status === 'danger' ||
-    wildfireAssessment?.status === 'danger' ||
-    landslideAssessment?.status === 'danger'
+    wildfireAssessment?.status === 'danger'
   ) ? 'danger' : (
     protectionAssessment?.status === 'caution' ||
     cycloneAssessment?.status === 'caution' ||
     floodAssessment?.status === 'caution' ||
     droughtAssessment?.status === 'caution' ||
     airPollution?.status === 'caution' ||
-    wildfireAssessment?.status === 'caution' ||
-    landslideAssessment?.status === 'caution'
+    wildfireAssessment?.status === 'caution'
   ) ? 'caution' : 'safe';
 
-  // 7 Multi-Hazard Threat Evaluation Tests (Vertical Layout)
+  // 6 Multi-Hazard Threat Evaluation Tests (Vertical Layout)
   const renderHazardTests = () => (
     <div className="flex flex-col space-y-3">
       {/* Pillar 1: Earthquake / Seismic (200 km) */}
@@ -1582,79 +1469,6 @@ export const LiveTrackingPage: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Pillar 7: Landslide Threat */}
-      <div
-        className={`p-3.5 rounded-2xl border transition-all ${
-          landslideAssessment?.status === 'danger'
-            ? 'bg-red-50/90 border-red-400 text-red-950 shadow-xs'
-            : landslideAssessment?.status === 'caution'
-            ? 'bg-amber-50/80 border-amber-300 text-amber-950 shadow-xs'
-            : 'bg-emerald-50/80 border-emerald-300 text-emerald-950 shadow-xs'
-        }`}
-      >
-        <div className="flex items-center justify-between pb-2 border-b border-black/5">
-          <div className="flex items-center gap-2">
-            <div
-              className={`p-1.5 rounded-lg text-white ${
-                landslideAssessment?.status === 'danger'
-                  ? 'bg-red-600'
-                  : landslideAssessment?.status === 'caution'
-                  ? 'bg-amber-600'
-                  : 'bg-emerald-600'
-              }`}
-            >
-              <Mountain className="w-4 h-4" />
-            </div>
-            <span className="font-bold text-xs uppercase tracking-wider text-slate-900">
-              7. Landslide Threat
-            </span>
-          </div>
-          <span
-            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-              landslideAssessment?.status === 'danger'
-                ? 'bg-red-200 text-red-900'
-                : landslideAssessment?.status === 'caution'
-                ? 'bg-amber-200 text-amber-900'
-                : 'bg-emerald-200 text-emerald-900'
-            }`}
-          >
-            {landslideAssessment ? landslideAssessment.level : 'PENDING SCAN'}
-          </span>
-        </div>
-
-        <div className="mt-2.5">
-          <div className="text-xs font-bold text-slate-900">
-            {landslideAssessment ? landslideAssessment.title : 'NASA Global Landslide Catalog'}
-          </div>
-          <p className="text-[11px] text-slate-700 mt-1 leading-relaxed">
-            {landslideAssessment
-              ? landslideAssessment.message
-              : 'Correlates rainfall saturation with historical slope failure incidents from NASA Global Landslide Catalog.'}
-          </p>
-
-          <div className="mt-2.5 pt-2 border-t border-black/5 grid grid-cols-3 gap-1.5 text-center text-xs">
-            <div className="p-1.5 bg-white/70 rounded-lg">
-              <span className="text-[10px] text-slate-500 block">Nearest Zone</span>
-              <span className="font-bold text-slate-800 truncate block" title={landslideAssessment?.nearest_landslide?.title || 'None'}>
-                {landslideAssessment?.nearest_landslide ? `${Math.round(landslideAssessment.nearest_landslide.distance_km)} km` : 'None'}
-              </span>
-            </div>
-            <div className="p-1.5 bg-white/70 rounded-lg">
-              <span className="text-[10px] text-slate-500 block">Trigger</span>
-              <span className="font-bold text-slate-800 truncate block">
-                {landslideAssessment?.nearest_landslide?.trigger || 'Rainfall'}
-              </span>
-            </div>
-            <div className="p-1.5 bg-white/70 rounded-lg">
-              <span className="text-[10px] text-slate-500 block">Incidents</span>
-              <span className="font-bold text-amber-700 truncate block">
-                {landslideAssessment ? `${landslideAssessment.catalog_incidents_count} zones` : '—'}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 
@@ -1669,14 +1483,14 @@ export const LiveTrackingPage: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold text-[#0F172A] tracking-tight">
-                Universal 7-Pillar Multi-Hazard Defense Radar
+                Universal 6-Pillar Multi-Hazard Defense Radar
               </h1>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-                7-PILLAR SHIELD
+                6-PILLAR SHIELD
               </span>
             </div>
             <p className="text-xs text-[#65758B] mt-0.5">
-              Simultaneous real-time evaluation: Earthquake, Cyclone & Gale Winds (Tezt Hawa), Flood Inundation, Drought, Air Pollution / AQI, NASA Wildfires, and NASA Landslide Catalog.
+              Simultaneous real-time evaluation: Earthquake, Cyclone & Gale Winds (Tez Hawa), Flood Inundation, Drought, Air Pollution / AQI, and NASA Wildfires.
             </p>
           </div>
         </div>
@@ -1694,7 +1508,7 @@ export const LiveTrackingPage: React.FC = () => {
             ) : (
               <Navigation className="w-4 h-4 text-emerald-400" />
             )}
-            <span>{isLocating || isLoadingWeather ? 'Analyzing 7-Pillar Radar...' : 'Check All 7 Hazards (Live Radar)'}</span>
+            <span>{isLocating || isLoadingWeather ? 'Analyzing 6-Pillar Radar...' : 'Check All 6 Hazards (Live Radar)'}</span>
           </button>
 
           {/* Continuous Watch Toggle */}
@@ -1839,12 +1653,6 @@ export const LiveTrackingPage: React.FC = () => {
                 <span>Wildfire: <b>{wildfireAssessment.nearest_wildfire.title}</b> ({Math.round(wildfireAssessment.nearest_wildfire.distance_km)} km)</span>
               </div>
             )}
-            {landslideAssessment?.nearest_landslide && (
-              <div className="flex items-center gap-1.5 text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
-                <span>🏔️</span>
-                <span>Landslide: <b>{Math.round(landslideAssessment.nearest_landslide.distance_km)} km away</b></span>
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -1885,10 +1693,6 @@ export const LiveTrackingPage: React.FC = () => {
               <div className="flex items-center gap-1.5">
                 <span className="w-3.5 h-3.5 rounded-full bg-red-600 flex items-center justify-center text-[10px] text-white">🔥</span>
                 <span className="font-semibold text-slate-800">NASA Wildfire</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3.5 h-3.5 rounded-full bg-amber-700 flex items-center justify-center text-[10px] text-white">🏔️</span>
-                <span className="font-semibold text-slate-800">NASA Landslide</span>
               </div>
             </div>
 
@@ -1986,7 +1790,7 @@ export const LiveTrackingPage: React.FC = () => {
                 </span>
               </div>
 
-              {/* Segmented Switcher: [ 7 Threat Tests ] | [ Live Feeds ] */}
+              {/* Segmented Switcher: [ 6 Threat Tests ] | [ Live Feeds ] */}
               <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200/80">
                 <button
                   type="button"
@@ -1998,7 +1802,7 @@ export const LiveTrackingPage: React.FC = () => {
                   }`}
                 >
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>7 Threat Tests</span>
+                  <span>6 Threat Tests</span>
                 </button>
                 <button
                   type="button"
@@ -2015,7 +1819,7 @@ export const LiveTrackingPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Mode 1: 7 Multi-Hazard Threat Tests (Vertical Stack) */}
+            {/* Mode 1: 6 Multi-Hazard Threat Tests (Vertical Stack) */}
             {rightPanelMode === "tests" && (
               <div className="flex-1 overflow-y-auto pr-1 mt-3 space-y-3">
                 {renderHazardTests()}
@@ -2033,13 +1837,11 @@ export const LiveTrackingPage: React.FC = () => {
                     ? `${earthquakes.length} Quakes`
                     : activeSidebarTab === 'cyclones'
                     ? `${cycloneAssessment?.all_active_storms?.length || 0} Cyclones`
-                    : activeSidebarTab === 'wildfires'
-                    ? `${wildfireAssessment?.all_active_wildfires?.length || 0} Fires`
-                    : `${landslideAssessment?.nearby_landslides?.length || 0} Zones`}
+                    : `${wildfireAssessment?.all_active_wildfires?.length || 0} Fires`}
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+              <div className="grid grid-cols-3 gap-1.5">
                 <button
                   onClick={() => setActiveSidebarTab('quakes')}
                   className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
@@ -2074,18 +1876,6 @@ export const LiveTrackingPage: React.FC = () => {
                 >
                   <Flame className="w-3 h-3 text-orange-600 shrink-0" />
                   <span className="truncate">Fires ({wildfireAssessment?.all_active_wildfires?.length || 0})</span>
-                </button>
-
-                <button
-                  onClick={() => setActiveSidebarTab('landslides')}
-                  className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                    activeSidebarTab === 'landslides'
-                      ? 'bg-amber-50 text-amber-800 border border-amber-200 shadow-xs'
-                      : 'text-slate-600 hover:bg-slate-50 border border-transparent'
-                  }`}
-                >
-                  <Mountain className="w-3 h-3 text-amber-700 shrink-0" />
-                  <span className="truncate">Slopes ({landslideAssessment?.nearby_landslides?.length || 0})</span>
                 </button>
               </div>
             </div>
@@ -2178,7 +1968,7 @@ export const LiveTrackingPage: React.FC = () => {
                     <p className="text-xs font-medium text-slate-600">
                       {userLocation
                         ? 'No active tropical cyclones or hurricanes currently tracked globally by NASA EONET.'
-                        : 'Click "Check All 7 Hazards" above to query real-time NASA EONET severe storm telemetry.'}
+                        : 'Click "Check All 6 Hazards" above to query real-time NASA EONET severe storm telemetry.'}
                     </p>
                     {userLocation && (
                       <div className="mt-2 text-[11px] text-emerald-600 font-semibold flex items-center justify-center gap-1">
@@ -2265,7 +2055,7 @@ export const LiveTrackingPage: React.FC = () => {
                     <p className="text-xs font-medium text-slate-600">
                       {userLocation
                         ? 'No active wildfire blazes currently recorded globally in open status by NASA EONET.'
-                        : 'Click "Check All 7 Hazards" above to query real-time NASA wildfire hotspots.'}
+                        : 'Click "Check All 6 Hazards" above to query real-time NASA wildfire hotspots.'}
                     </p>
                     {userLocation && (
                       <div className="mt-2 text-[11px] text-emerald-600 font-semibold flex items-center justify-center gap-1">
@@ -2344,97 +2134,12 @@ export const LiveTrackingPage: React.FC = () => {
                 )}
               </div>
             )}
-
-            {/* NASA Global Landslide Catalog Feed */}
-            {activeSidebarTab === 'landslides' && (
-              <div className="mt-3 space-y-2.5 overflow-y-auto max-h-[640px] pr-1">
-                {(!landslideAssessment?.nearby_landslides || landslideAssessment.nearby_landslides.length === 0) ? (
-                  <div className="text-center py-12 px-4 text-slate-400">
-                    <Mountain className="w-8 h-8 mx-auto mb-2 opacity-30 text-amber-700" />
-                    <p className="text-xs font-medium text-slate-600">
-                      {userLocation
-                        ? 'No cataloged landslide incidents found within 300 km in the NASA Global Landslide Catalog.'
-                        : 'Click "Check All 7 Hazards" above to query NASA Global Landslide Catalog.'}
-                    </p>
-                    {userLocation && (
-                      <div className="mt-2 text-[11px] text-emerald-600 font-semibold flex items-center justify-center gap-1">
-                        <ShieldCheck className="w-3.5 h-3.5" />
-                        <span>Stable Geotechnical Zone</span>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <>
-                    <div className="text-[11px] font-bold text-slate-500 mb-1 flex items-center justify-between">
-                      <span>NASA Landslide Catalog (within 300 km):</span>
-                      <span className="text-[10px] text-amber-800 font-semibold">Sorted by Distance</span>
-                    </div>
-
-                    {landslideAssessment.nearby_landslides.map((ls) => {
-                      const isSelected = selectedLandslide?.id === ls.id;
-                      const badgeClass =
-                        ls.distance_km <= 35
-                          ? 'bg-red-700 text-white'
-                          : ls.distance_km <= 100
-                          ? 'bg-amber-700 text-white'
-                          : 'bg-amber-600 text-white';
-
-                      return (
-                        <div
-                          key={ls.id}
-                          onClick={() => handleSelectLandslide(ls)}
-                          className={`p-3 rounded-xl border transition-all cursor-pointer ${
-                            isSelected
-                              ? 'bg-amber-50/90 border-amber-300 ring-1 ring-amber-300 shadow-xs'
-                              : 'bg-slate-50/70 border-slate-200 hover:bg-slate-100'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm">🏔️</span>
-                              <span className="text-xs font-bold text-slate-900 line-clamp-1">{ls.title}</span>
-                            </div>
-                            <span className="text-[10px] font-mono font-bold text-amber-800 whitespace-nowrap">
-                              {Math.round(ls.distance_km).toLocaleString()} km away
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${badgeClass}`}>
-                              {ls.size || 'Medium'} Landslide
-                            </span>
-                            <span className="text-[11px] text-slate-600 font-semibold">
-                              Trigger: {ls.trigger}
-                            </span>
-                            {ls.fatalities > 0 && (
-                              <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">
-                                {ls.fatalities} Fatalities
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="flex items-center justify-between text-[11px] text-slate-500 mt-2 pt-2 border-t border-slate-200/60">
-                            <div className="flex items-center gap-1 text-[10px]">
-                              <MapPin className="w-3 h-3 text-slate-400" />
-                              <span>{ls.lat.toFixed(2)}°, {ls.lon.toFixed(2)}° ({ls.country})</span>
-                            </div>
-                            <span className="text-[10px] text-slate-500 font-medium">
-                              NASA GLC
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </>
-                )}
-              </div>
-            )}
-              </div>
-            )}
           </div>
-        </div>
+        )}
       </div>
     </div>
+  </div>
+</div>
   );
 };
 

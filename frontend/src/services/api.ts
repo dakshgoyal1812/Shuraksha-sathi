@@ -443,17 +443,6 @@ export const api = {
       all_active_wildfires: parsedWildfires
     };
 
-    // Fallback Landslides
-    const landslideAssessment = {
-      status: 'safe' as 'safe' | 'caution' | 'danger',
-      level: 'SAFE (STABLE TERRAIN / NO ACTIVE SLIPPAGE)',
-      title: 'Stable Terrain & Low Landslide Hazard',
-      message: 'No immediate slope failure or active mudslide threat in your region.',
-      nearest_landslide: null,
-      catalog_incidents_count: 0,
-      nearby_landslides: []
-    };
-
     const floodStatus = rain1h >= 25 ? 'danger' : rain1h >= 10 ? 'caution' : 'safe';
     const droughtStatus = (temp >= 38 && humidity <= 25) ? 'danger' : (temp >= 33 && humidity <= 35) ? 'caution' : 'safe';
 
@@ -505,8 +494,7 @@ export const api = {
         all_active_storms: parsedStorms
       },
       air_pollution: airPollution,
-      wildfire_assessment: wildfireAssessment,
-      landslide_assessment: landslideAssessment
+      wildfire_assessment: wildfireAssessment
     };
 
     hazardsClientCache.set(cacheKey, { time: now, data: fallbackPayload });
