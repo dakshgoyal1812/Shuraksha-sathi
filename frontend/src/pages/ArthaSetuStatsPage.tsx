@@ -222,7 +222,7 @@ export const ArthaSetuStatsPage: React.FC = () => {
               className="flex items-center justify-center gap-2 w-full py-2 px-3 text-xs font-semibold text-slate-700 hover:text-black bg-white hover:bg-slate-100 border border-[#E1E7EF] rounded-lg shadow-xs transition"
               title="Return to Greenfield City Evacuation Simulation"
             >
-              <span>Back to EvacuSafe Platform</span>
+              <span>Back to SurakshaSathi Platform</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           </div>

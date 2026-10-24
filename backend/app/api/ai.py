@@ -126,7 +126,7 @@ def call_openrouter_api(message: str, system_instruction: str = "", history: Opt
 @router.post("/api/ai/chat")
 def chat_with_ai(req: ChatRequest, db: Session = Depends(get_db)):
     """
-    Intelligent chatbot endpoint for EvacuSafe.
+    Intelligent chatbot endpoint for SurakshaSathi.
     Grounded in Greenfield City simulation parameters, real database drill results,
     and official NDMA/FEMA disaster evacuation guidelines to prevent hallucination.
     """
@@ -152,7 +152,7 @@ def chat_with_ai(req: ChatRequest, db: Session = Depends(get_db)):
     bottlenecks = metrics.get("bottlenecks_detail", []) if metrics else []
     
     context_text = f"""
-PROJECT: EvacuSafe (Suraksha) — Intelligent Disaster Evacuation Planning & Simulation Platform
+PROJECT: SurakshaSathi — Intelligent Disaster Evacuation Planning & Simulation Platform
 SIMULATION ENVIRONMENT: Greenfield City (Synthetic 20-node, 32-edge urban road network)
 ACTIVE SCENARIO: {scenario.name if scenario else 'Greenfield City Flood Evacuation Drill'} ({scenario.disaster_type if scenario else 'Flood'}, Severity: {scenario.severity if scenario else 'High'})
 TOTAL POPULATION: {metrics.get('total_population', 600)} synthetic evacuees
@@ -181,7 +181,7 @@ OFFICIAL DISASTER MANAGEMENT GUIDELINES (NDMA / FEMA / ICS STANDARDS):
 """
 
     system_instruction = f"""
-You are the Emergency Operations Center (EOC) AI Assistant for EvacuSafe (Suraksha).
+You are the Emergency Operations Center (EOC) AI Assistant for SurakshaSathi.
 Your mission is to provide strictly factual, non-hallucinatory intelligence on disaster evacuation planning, Greenfield City simulation drills, and disaster management guidelines.
 
 CORE INSTRUCTIONS:
@@ -299,7 +299,7 @@ def generate_ai_explanation(run_id: str, db: Session = Depends(get_db)):
     return {
         "run_id": run.id,
         "scenario_name": run.scenario_name,
-        "engine_type": "EvacuSafe Heuristic Reasoner (Ground-Truth Context)",
+        "engine_type": "SurakshaSathi Heuristic Reasoner (Ground-Truth Context)",
         "executive_summary": executive_verdict,
         "bottleneck_breakdown": " ".join(why_bottlenecks),
         "shelter_allocation_analysis": shelter_insight,

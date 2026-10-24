@@ -1,8 +1,8 @@
-# EvacuSafe (Suraksha) — Intelligent Disaster Evacuation Planning & Simulation Platform
+# SurakshaSathi — Intelligent Disaster Evacuation Planning & Simulation Platform
 
 <div align="center">
 
-![EvacuSafe Badge](https://img.shields.io/badge/EvacuSafe-Suraksha-06B6D4?style=for-the-badge&logo=shield&logoColor=white)
+![SurakshaSathi Badge](https://img.shields.io/badge/SurakshaSathi-Disaster_Planning-06B6D4?style=for-the-badge&logo=shield&logoColor=white)
 ![Build Status](https://img.shields.io/badge/Build-Passing-10B981?style=for-the-badge)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
 ![React](https://img.shields.io/badge/React_18-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
@@ -27,7 +27,7 @@ During catastrophic floods, wildfires, and seismic disruptions, emergency planne
 2. **Dynamic Inundation & Severed Topology:** Rising floodwaters or fire fronts block critical roads, isolating entire neighborhoods.
 3. **Shelter Asymmetry & Capacity Breaches:** Evacuees converge on geographically proximal shelters, creating dangerous overcrowding while secondary facilities remain vacant.
 
-**EvacuSafe (Suraksha)** resolves these operational challenges through a **software-only, agent-based simulation and graph-optimization platform**. Planners can model hypothetical disaster scenarios, simulate population movement through road networks toward designated shelters, automatically detect bottlenecks, evaluate shelter capacities, compare evacuation strategies, and generate audit-ready reports.
+**SurakshaSathi** resolves these operational challenges through a **software-only, agent-based simulation and graph-optimization platform**. Planners can model hypothetical disaster scenarios, simulate population movement through road networks toward designated shelters, automatically detect bottlenecks, evaluate shelter capacities, compare evacuation strategies, and generate audit-ready reports.
 
 ### 🛡️ Mandatory Planning Constraints Adhered To
 * **100% Software-Based:** Requires **zero hardware sensors, no CCTV feeds, no image recognition, no IoT devices, no drone integrations, and no live GPS tracking of real citizens**.

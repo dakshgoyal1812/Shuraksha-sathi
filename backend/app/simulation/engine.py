@@ -272,7 +272,7 @@ class SimulationEngine:
         self._log_event(
             0,
             "SIMULATION_INIT",
-            f"EvacuSafe initialized with {self.population_size} virtual agents across Greenfield City. {len(self.blocked_roads)} roads blocked.",
+            f"SurakshaSathi initialized with {self.population_size} virtual agents across Greenfield City. {len(self.blocked_roads)} roads blocked.",
             "info"
         )
 

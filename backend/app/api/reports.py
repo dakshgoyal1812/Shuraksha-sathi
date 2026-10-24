@@ -29,7 +29,7 @@ def get_report_data(run_id: str, db: Session = Depends(get_db)):
     events = json.loads(run.timeline_events or "[]")
 
     return {
-        "project": "EvacuSafe — Intelligent Disaster Evacuation Planning Platform",
+        "project": "SurakshaSathi — Intelligent Disaster Evacuation Planning Platform",
         "run_id": run.id,
         "scenario_id": run.scenario_id,
         "scenario_name": run.scenario_name,
@@ -64,8 +64,8 @@ def download_csv_report(run_id: str, db: Session = Depends(get_db)):
     writer = csv.writer(output)
 
     # Header section
-    writer.writerow(["EVACUSAFE SIMULATION REPORT"])
-    writer.writerow(["Project", "EvacuSafe — Intelligent Disaster Evacuation Planning"])
+    writer.writerow(["SURAKSHASATHI SIMULATION REPORT"])
+    writer.writerow(["Project", "SurakshaSathi — Intelligent Disaster Evacuation Planning"])
     writer.writerow(["Scenario Name", run.scenario_name])
     writer.writerow(["Disaster Type", scenario.disaster_type if scenario else "Flood"])
     writer.writerow(["Severity Level", scenario.severity if scenario else "High"])
@@ -106,7 +106,7 @@ def download_csv_report(run_id: str, db: Session = Depends(get_db)):
 
     import re
     safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', run.scenario_name)
-    filename = f"EvacuSafe_{safe_name}_{run.id[:8]}_Report.csv"
+    filename = f"SurakshaSathi_{safe_name}_{run.id[:8]}_Report.csv"
 
     return StreamingResponse(
         iter([output.getvalue()]),
@@ -174,7 +174,7 @@ def download_pdf_report(run_id: str, db: Session = Depends(get_db)):
     story = []
 
     # Title & Header
-    story.append(Paragraph("EVACUSAFE — DISASTER EVACUATION REPORT", title_style))
+    story.append(Paragraph("SURAKSHASATHI — DISASTER EVACUATION REPORT", title_style))
     story.append(Paragraph(f"Scenario: <b>{run.scenario_name}</b> | Generated: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}", subtitle_style))
     story.append(Spacer(1, 12))
 
@@ -238,7 +238,7 @@ def download_pdf_report(run_id: str, db: Session = Depends(get_db)):
     # Disclaimer & Assumptions
     story.append(Paragraph("Model Assumptions & Mandatory Planning Disclaimer", h2_style))
     disclaimer_text = (
-        "<b>Notice:</b> EvacuSafe is a software-based discrete-time simulation system designed for emergency planning and preparedness drills. "
+        "<b>Notice:</b> SurakshaSathi is a software-based discrete-time simulation system designed for emergency planning and preparedness drills. "
         "All simulated populations, vehicle flows, and congestion metrics are derived from mathematical graph models and synthetic distributions. "
         "Actual disaster events involve human panic, real-time debris, and micro-behavior that this model abstracts. "
         "Results do not guarantee physical safety or life preservation and should supplement, never replace, certified civil protection procedures."
@@ -249,7 +249,7 @@ def download_pdf_report(run_id: str, db: Session = Depends(get_db)):
     buffer.seek(0)
     import re
     safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', run.scenario_name)
-    filename = f"EvacuSafe_{safe_name}_{run.id[:8]}_Report.pdf"
+    filename = f"SurakshaSathi_{safe_name}_{run.id[:8]}_Report.pdf"
 
     return StreamingResponse(
         buffer,

@@ -81,7 +81,7 @@ async def lifespan(app: FastAPI):
             pass
 
 app = FastAPI(
-    title="EvacuSafe — Intelligent Disaster Evacuation Planning API",
+    title="SurakshaSathi — Intelligent Disaster Evacuation Planning API",
     description="Software-only agent-based disaster evacuation simulation and route optimization engine.",
     version="1.0.0",
     docs_url="/api/docs",
@@ -112,7 +112,7 @@ app.add_middleware(
 def api_root():
     return {
         "status": "online",
-        "service": "EvacuSafe Engine API",
+        "service": "SurakshaSathi Engine API",
         "version": "1.0.0",
         "docs": "/api/docs",
         "health": "/health",
@@ -147,7 +147,7 @@ def health_check(request: Request, check_db: bool = False):
 
     payload = {
         "status": "healthy",
-        "service": "EvacuSafe Engine",
+        "service": "SurakshaSathi Engine",
         "version": "1.0.0",
         "fictional_town": "Greenfield City",
         "uptime_seconds": uptime_sec,

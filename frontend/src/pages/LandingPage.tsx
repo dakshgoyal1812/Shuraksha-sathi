@@ -110,7 +110,7 @@ export const LandingPage: React.FC = () => {
         <div className="max-w-6xl mx-auto text-center relative z-10">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-[#E1E7EF] text-xs font-semibold text-[#0F172A] mb-6 shadow-xs">
             <Shield className="w-4 h-4 text-emerald-600" />
-            <span>EvacuSafe Planning & Simulation Platform</span>
+            <span>SurakshaSathi Planning & Simulation Platform</span>
           </div>
 
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-[#0F172A] mb-6">
@@ -201,7 +201,7 @@ export const LandingPage: React.FC = () => {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0F172A] mb-4">
-              How EvacuSafe Works
+              How SurakshaSathi Works
             </h2>
             <p className="text-[#64748B] max-w-2xl mx-auto text-sm">
               Follow a standardized four-step simulation lifecycle from disaster configuration to verified operational recommendations.
@@ -232,7 +232,7 @@ export const LandingPage: React.FC = () => {
             Empowering Disaster Management Authorities
           </h2>
           <p className="text-[#64748B] text-sm sm:text-base leading-relaxed mb-10">
-            EvacuSafe provides verifiable evidence for urban planners to test emergency bridge closures, adjust shelter capacities, and simulate phased departures before crisis strikes.
+            SurakshaSathi provides verifiable evidence for urban planners to test emergency bridge closures, adjust shelter capacities, and simulate phased departures before crisis strikes.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
@@ -263,7 +263,7 @@ export const LandingPage: React.FC = () => {
               <Shield className="w-4 h-4" />
             </div>
             <div>
-              <span className="font-bold text-[#0F172A]">EvacuSafe Platform</span>
+              <span className="font-bold text-[#0F172A]">SurakshaSathi Platform</span>
               <p className="text-[11px] text-[#64748B]">Simulate Today. Save Lives Tomorrow.</p>
             </div>
           </div>

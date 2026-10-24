@@ -96,7 +96,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <span className="font-bold text-[15px] tracking-tight text-[#0F172A] group-hover:text-slate-700 transition-colors">
-                EvacuSafe
+                SurakshaSathi
               </span>
               <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
                 EOC Platform

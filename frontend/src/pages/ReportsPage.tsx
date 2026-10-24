@@ -140,7 +140,7 @@ export const ReportsPage: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-[10px] uppercase font-bold tracking-widest text-[#64748B] block">
-                  EVACUSAFE SIMULATION PLATFORM • FORMAL DRILL REPORT
+                  SURAKSHASATHI SIMULATION PLATFORM • FORMAL DRILL REPORT
                 </span>
                 <h2 className="text-2xl font-bold text-[#0F172A] mt-1 tracking-tight">
                   {reportData.scenario_name}

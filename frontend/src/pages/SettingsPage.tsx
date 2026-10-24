@@ -163,7 +163,7 @@ export const SettingsPage: React.FC = () => {
           <li><b>Mathematical Network:</b> Road capacities, travel times, and congestion delays follow calibrated discrete-time BPR density functions.</li>
           <li><b>Shelter Allocation:</b> Safe haven capacities represent physical urban planning quotas; agents dynamically reroute when capacities are met.</li>
           <li><b>Software-Only Platform:</b> No physical sensors, live CCTV, GPS tracking of real persons, IoT devices, or drones are utilized.</li>
-          <li><b>Planning Decision Support:</b> EvacuSafe is strictly designed for training exercises, municipal drills, and preparedness research. Simulation outcomes depend upon model input assumptions and do not replace certified emergency management protocols.</li>
+          <li><b>Planning Decision Support:</b> SurakshaSathi is strictly designed for training exercises, municipal drills, and preparedness research. Simulation outcomes depend upon model input assumptions and do not replace certified emergency management protocols.</li>
         </ul>
       </div>
     </div>
