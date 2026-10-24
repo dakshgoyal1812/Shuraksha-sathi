@@ -72,6 +72,7 @@ export const Greenfield3DScene: React.FC<Greenfield3DSceneProps> = ({
     id: 'R-1',
   });
   const [contraFlowGlobal, setContraFlowGlobal] = useState<boolean>(false);
+  const lastUiUpdateRef = useRef<number>(0);
 
   useEffect(() => {
     const container = canvasMountRef.current;
@@ -83,7 +84,11 @@ export const Greenfield3DScene: React.FC<Greenfield3DSceneProps> = ({
       engine.getSnapshot(),
       (dtSimSec) => {
         const nextSnap = engine.tick(dtSimSec);
-        setSnapshot(nextSnap);
+        const now = performance.now();
+        if (now - lastUiUpdateRef.current >= 200) {
+          lastUiUpdateRef.current = now;
+          setSnapshot(nextSnap);
+        }
         return nextSnap;
       },
       (target) => {

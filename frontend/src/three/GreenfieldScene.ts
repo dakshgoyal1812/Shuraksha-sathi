@@ -224,7 +224,7 @@ export class GreenfieldSceneManager {
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.target.set(0, 0, 1);
     this.controls.enableDamping = !this.isSoftwareGl;
-    this.controls.dampingFactor = 0.06;
+    this.controls.dampingFactor = 0.08;
     this.controls.maxPolarAngle = Math.PI / 2 - 0.06;
     this.controls.minDistance = 16;
     this.controls.maxDistance = 145;
@@ -940,9 +940,7 @@ export class GreenfieldSceneManager {
     );
   }
 
-  public syncSnapshot(snapshot: SimulationSnapshot): void {
-    this.latestSnapshot = snapshot;
-
+  public syncRoadTelemetryAndBadges(snapshot: SimulationSnapshot): void {
     for (const node of snapshot.nodes) {
       this.nodeMap.set(node.id, node);
       if (node.category === 'shelter') {
@@ -1045,7 +1043,11 @@ export class GreenfieldSceneManager {
         }
       }
     }
+  }
 
+  public syncSnapshot(snapshot: SimulationSnapshot): void {
+    this.latestSnapshot = snapshot;
+    this.syncRoadTelemetryAndBadges(snapshot);
     this.syncVehiclePositions(snapshot.agents);
   }
 
@@ -1278,23 +1280,32 @@ export class GreenfieldSceneManager {
           const laneOffsetX = -_vecDir.z * 0.32;
           const laneOffsetZ = _vecDir.x * 0.32;
 
-          veh.position.set(
-            THREE.MathUtils.lerp(_vecA.x, _vecB.x, t) + laneOffsetX,
-            0.34,
-            THREE.MathUtils.lerp(_vecA.z, _vecB.z, t) + laneOffsetZ,
-          );
+          const targetX = THREE.MathUtils.lerp(_vecA.x, _vecB.x, t) + laneOffsetX;
+          const targetZ = THREE.MathUtils.lerp(_vecA.z, _vecB.z, t) + laneOffsetZ;
           const heading = Math.atan2(_vecDir.x, -_vecDir.z);
-          veh.rotation.y = -heading + Math.PI / 2;
+          const targetRot = -heading + Math.PI / 2;
+
+          if (!veh.userData.targetPos) {
+            veh.userData.targetPos = new THREE.Vector3(targetX, 0.34, targetZ);
+            veh.position.copy(veh.userData.targetPos);
+            veh.rotation.y = targetRot;
+          } else {
+            veh.userData.targetPos.set(targetX, 0.34, targetZ);
+          }
+          veh.userData.targetRot = targetRot;
           continue;
         }
       }
 
       // Linear 2D map to 3D world coordinate transformation:
-      // worldX = (x_2d - 380) * 0.118
-      // worldZ = (y_2d - 260) * 0.104
       const worldX = (agent.x - 380) * 0.118;
       const worldZ = (agent.y - 260) * 0.104;
-      veh.position.set(worldX, 0.34, worldZ);
+      if (!veh.userData.targetPos) {
+        veh.userData.targetPos = new THREE.Vector3(worldX, 0.34, worldZ);
+        veh.position.copy(veh.userData.targetPos);
+      } else {
+        veh.userData.targetPos.set(worldX, 0.34, worldZ);
+      }
     }
 
     // Hide inactive or completed vehicles
@@ -1438,22 +1449,42 @@ export class GreenfieldSceneManager {
   private startLoop(): void {
     const tick = () => {
       if (this.isDisposed) return;
-      const dt = Math.min(this.clock.getDelta(), 0.1);
+      const dt = Math.min(this.clock.getDelta(), 0.06);
 
-      this.waterTex.offset.y -= dt * 0.14;
+      this.waterTex.offset.y -= dt * 0.16;
 
       if (this.isPlaying && !this.isMockdrillMode) {
-        this.simAccumulatorSec += dt * this.simSpeedMultiplier;
-        if (this.simAccumulatorSec >= 0.18) {
-          const stepSimSec = this.simAccumulatorSec * 3.8;
+        // Continuous, buttery-smooth 60 FPS agent movement:
+        // Advancing simulation at 5.5x speed progression per frame for brisk, natural evacuation flow
+        const stepSimSec = dt * this.simSpeedMultiplier * 5.5;
+        const nextSnap = this.onSimTickCallback(stepSimSec);
+        this.latestSnapshot = nextSnap;
+        this.syncVehiclePositions(nextSnap.agents);
+
+        // Throttle road bottleneck badges, colors, and shelter occupancy sprites to ~4 FPS (every 0.25s)
+        this.simAccumulatorSec += dt;
+        if (this.simAccumulatorSec >= 0.25) {
           this.simAccumulatorSec = 0;
-          const nextSnap = this.onSimTickCallback(stepSimSec);
-          this.syncSnapshot(nextSnap);
+          this.syncRoadTelemetryAndBadges(nextSnap);
+        }
+      } else if (this.isMockdrillMode) {
+        // Silky-smooth interpolation of mockdrill vehicles between data updates at 60 FPS
+        const lerpFactor = Math.min(1, dt * 14);
+        for (const veh of this.vehiclePool.values()) {
+          if (veh.visible && veh.userData.targetPos) {
+            veh.position.lerp(veh.userData.targetPos, lerpFactor);
+            if (veh.userData.targetRot !== undefined) {
+              let diff = (veh.userData.targetRot - veh.rotation.y) % (Math.PI * 2);
+              if (diff > Math.PI) diff -= Math.PI * 2;
+              if (diff < -Math.PI) diff += Math.PI * 2;
+              veh.rotation.y += diff * lerpFactor;
+            }
+          }
         }
       }
 
       if (this.isCameraTransitioning) {
-        const alpha = 1 - Math.exp(-5.5 * dt);
+        const alpha = 1 - Math.exp(-8.5 * dt);
         _camTargetPos.copy(this.camera.position).lerp(this.desiredCamPos, alpha);
         _camTargetLook
           .copy(this.controls.target)
@@ -1462,9 +1493,11 @@ export class GreenfieldSceneManager {
         this.controls.target.copy(_camTargetLook);
 
         if (
-          this.camera.position.distanceToSquared(this.desiredCamPos) < 0.08 &&
-          this.controls.target.distanceToSquared(this.desiredCamLook) < 0.08
+          this.camera.position.distanceToSquared(this.desiredCamPos) < 0.04 &&
+          this.controls.target.distanceToSquared(this.desiredCamLook) < 0.04
         ) {
+          this.camera.position.copy(this.desiredCamPos);
+          this.controls.target.copy(this.desiredCamLook);
           this.isCameraTransitioning = false;
         }
       }
