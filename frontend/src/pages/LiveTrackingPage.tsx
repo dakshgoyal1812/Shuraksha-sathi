@@ -33,7 +33,6 @@ import {
   Waves,
   Flame,
   CloudFog,
-  Satellite,
   Globe
 } from 'lucide-react';
 import { api } from '../services/api';
@@ -211,93 +210,23 @@ function playEmergencyAlarm(type: 'danger' | 'caution') {
   }
 }
 
-export type MapTileStyle = 'satellite-hybrid' | 'satellite' | 'google-satellite' | 'dark' | 'osm';
-
-interface TileLayerOption {
-  url: string;
-  options: L.TileLayerOptions;
-}
-
-const TILE_STYLES: Record<MapTileStyle, { name: string; label: string; icon: string; layers: TileLayerOption[] }> = {
-  'satellite-hybrid': {
-    name: 'Real Earth Satellite (Hybrid)',
-    label: 'Satellite Hybrid',
-    icon: '🛰️',
-    layers: [
-      {
-        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        options: {
-          maxZoom: 19,
-          attribution: 'Tiles &copy; Esri &mdash; Earthstar Geographics, Maxar, USGS, NOAA',
-        },
-      },
-      {
-        url: 'https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-        options: {
-          maxZoom: 19,
-          attribution: '&copy; Esri World Boundaries and Places',
-        },
-      },
-    ],
+// Real Earth Satellite Map Tile Layers (Esri High-Resolution Imagery + Boundaries & Place Names)
+const SATELLITE_HYBRID_LAYERS = [
+  {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    options: {
+      maxZoom: 19,
+      attribution: 'Tiles &copy; Esri &mdash; Earthstar Geographics, Maxar, USGS, NOAA',
+    },
   },
-  'satellite': {
-    name: 'Real Earth Satellite (Natural)',
-    label: 'True Satellite',
-    icon: '🌍',
-    layers: [
-      {
-        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        options: {
-          maxZoom: 19,
-          attribution: 'Tiles &copy; Esri &mdash; Earthstar Geographics, Maxar, USGS',
-        },
-      },
-    ],
+  {
+    url: 'https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+    options: {
+      maxZoom: 19,
+      attribution: '&copy; Esri World Boundaries and Places',
+    },
   },
-  'google-satellite': {
-    name: 'Google Earth Satellite (Hybrid)',
-    label: 'Google Earth',
-    icon: '🚀',
-    layers: [
-      {
-        url: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
-        options: {
-          maxZoom: 20,
-          attribution: '&copy; Google Satellite Imagery &amp; Data',
-        },
-      },
-    ],
-  },
-  'dark': {
-    name: 'Dark Tactical EOC',
-    label: 'Dark Tactical',
-    icon: '🌑',
-    layers: [
-      {
-        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-        options: {
-          maxZoom: 20,
-          subdomains: 'abcd',
-          attribution: '&copy; CartoDB &copy; OpenStreetMap contributors',
-        },
-      },
-    ],
-  },
-  'osm': {
-    name: 'OpenStreetMap Streets',
-    label: 'Streets',
-    icon: '🗺️',
-    layers: [
-      {
-        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        options: {
-          maxZoom: 19,
-          attribution: '&copy; OpenStreetMap contributors',
-        },
-      },
-    ],
-  },
-};
+];
 
 export const LiveTrackingPage: React.FC = () => {
   // Geolocation State
@@ -341,7 +270,6 @@ export const LiveTrackingPage: React.FC = () => {
   const [activeSidebarTab, setActiveSidebarTab] = useState<'quakes' | 'cyclones' | 'wildfires'>('quakes');
   const [rightPanelMode, setRightPanelMode] = useState<'tests' | 'feeds'>('tests');
   const [isLoadingWeather, setIsLoadingWeather] = useState<boolean>(false);
-  const [mapStyle, setMapStyle] = useState<MapTileStyle>('satellite-hybrid');
   const [realLocationName, setRealLocationName] = useState<string>('');
 
   // Map & Layers References
@@ -372,10 +300,9 @@ export const LiveTrackingPage: React.FC = () => {
         zoomControl: true,
       });
 
-      // Default: Real Earth Satellite Map (Hybrid with boundaries)
-      const initialStyle = TILE_STYLES['satellite-hybrid'];
+      // Real Earth Satellite Map (Esri High-Resolution Satellite + Boundaries)
       const initialLayers: L.TileLayer[] = [];
-      initialStyle.layers.forEach((l) => {
+      SATELLITE_HYBRID_LAYERS.forEach((l) => {
         const layer = L.tileLayer(l.url, l.options).addTo(map);
         initialLayers.push(layer);
       });
@@ -419,35 +346,6 @@ export const LiveTrackingPage: React.FC = () => {
         baseTileLayersRef.current = [];
       }
     };
-  }, []);
-
-  // Switch Base Map Style Dynamically (Real Earth Satellite, Hybrid, Dark, OSM)
-  const changeMapStyle = useCallback((newStyle: MapTileStyle) => {
-    setMapStyle(newStyle);
-    const map = mapInstanceRef.current;
-    if (!map) return;
-
-    // Remove current base tile layers
-    baseTileLayersRef.current.forEach((layer) => {
-      try {
-        map.removeLayer(layer);
-      } catch (e) {
-        // Safe ignore
-      }
-    });
-    baseTileLayersRef.current = [];
-
-    // Add new base tile layers and keep them behind hazard overlays
-    const styleDef = TILE_STYLES[newStyle];
-    const createdLayers: L.TileLayer[] = [];
-    styleDef.layers.forEach((l) => {
-      const layer = L.tileLayer(l.url, l.options).addTo(map);
-      if ((layer as any).bringToBack) {
-        (layer as any).bringToBack();
-      }
-      createdLayers.push(layer);
-    });
-    baseTileLayersRef.current = createdLayers;
   }, []);
 
   // 2. Compute Earthquake Protection Assessment within 200 km
@@ -1877,38 +1775,8 @@ export const LiveTrackingPage: React.FC = () => {
           <div className="relative rounded-2xl overflow-hidden border border-slate-700/60 bg-slate-950 shadow-md h-[680px]">
             <div id="live-tracking-map" ref={mapContainerRef} className="w-full h-full" />
 
-            {/* Top-Right Floating Controls: Real Earth Satellite Switcher & Tools */}
-            <div className="absolute top-3 right-3 z-[400] flex flex-wrap items-center justify-end gap-2 max-w-[calc(100%-80px)]">
-              {/* Satellite Map Switcher Capsule */}
-              <div className="flex items-center bg-slate-950/90 backdrop-blur-md p-1 rounded-xl border border-white/20 shadow-2xl text-xs">
-                <div className="flex items-center gap-1.5 px-2.5 py-1 text-slate-300 border-r border-white/10 hidden sm:flex">
-                  <Satellite className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-                  <span className="text-[10px] font-bold tracking-wider uppercase text-emerald-400">
-                    Real Earth Satellite
-                  </span>
-                </div>
-
-                {(['satellite-hybrid', 'satellite', 'google-satellite', 'dark', 'osm'] as MapTileStyle[]).map((styleKey) => {
-                  const styleInfo = TILE_STYLES[styleKey];
-                  const isActive = mapStyle === styleKey;
-                  return (
-                    <button
-                      key={styleKey}
-                      type="button"
-                      onClick={() => changeMapStyle(styleKey)}
-                      className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                        isActive
-                          ? 'bg-emerald-600 text-white shadow-md'
-                          : 'text-slate-300 hover:text-white hover:bg-white/10'
-                      }`}
-                      title={styleInfo.name}
-                    >
-                      <span className="text-xs">{styleInfo.icon}</span>
-                      <span className="hidden xl:inline">{styleInfo.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
+            {/* Top-Right Floating Controls: Live Location Navigation */}
+            <div className="absolute top-3 right-3 z-[400] flex items-center justify-end gap-2">
 
               {/* Live Location Navigation Actions */}
               {userLocation ? (
@@ -1942,45 +1810,6 @@ export const LiveTrackingPage: React.FC = () => {
                   <Crosshair className="w-4 h-4" />
                 </button>
               )}
-            </div>
-
-            {/* Bottom-Left Real Earth Satellite Active Feed & Legend */}
-            <div className="absolute bottom-3 left-3 z-[400] bg-slate-950/90 backdrop-blur-md px-3.5 py-2.5 rounded-xl border border-white/15 shadow-2xl text-[11px] text-slate-200 flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-1.5 pr-2 border-r border-white/15">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                <span className="font-bold text-white text-[11px] flex items-center gap-1">
-                  <Satellite className="w-3.5 h-3.5 text-emerald-400" />
-                  {TILE_STYLES[mapStyle].name}
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-blue-500 border border-white shadow-xs"></span>
-                <span className="font-bold text-white">Your Location</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3.5 h-3.5 rounded-full border border-dashed border-emerald-400 bg-emerald-950/40"></span>
-                <span className="text-slate-300 font-medium">{radiusKm} km Perimeter</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-yellow-400 border border-yellow-600"></span>
-                <span>Minor (&lt;4.0)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-orange-500 border border-orange-700"></span>
-                <span>Mod (4.0-4.9)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-red-600 border border-red-800"></span>
-                <span className="text-red-400 font-bold">Hazard (5.0+)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3.5 h-3.5 rounded-full bg-blue-600 flex items-center justify-center text-[10px] text-white">🌀</span>
-                <span className="font-semibold text-slate-200">Cyclone</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3.5 h-3.5 rounded-full bg-red-600 flex items-center justify-center text-[10px] text-white">🔥</span>
-                <span className="font-semibold text-slate-200">NASA Fire</span>
-              </div>
             </div>
           </div>
 
