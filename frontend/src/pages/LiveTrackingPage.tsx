@@ -342,6 +342,7 @@ export const LiveTrackingPage: React.FC = () => {
   const [rightPanelMode, setRightPanelMode] = useState<'tests' | 'feeds'>('tests');
   const [isLoadingWeather, setIsLoadingWeather] = useState<boolean>(false);
   const [mapStyle, setMapStyle] = useState<MapTileStyle>('satellite-hybrid');
+  const [realLocationName, setRealLocationName] = useState<string>('');
 
   // Map & Layers References
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -852,11 +853,59 @@ export const LiveTrackingPage: React.FC = () => {
     [evaluateProtectionStatus, soundEnabled]
   );
 
+  // Reverse geocode GPS coordinates to human-readable real location name
+  const reverseGeocodePosition = async (lat: number, lng: number): Promise<string> => {
+    try {
+      const bdcRes = await fetch(
+        `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`
+      );
+      if (bdcRes.ok) {
+        const d = await bdcRes.json();
+        const admin = d.localityInfo && d.localityInfo.administrative ? d.localityInfo.administrative : [];
+        const district = admin.find((a: any) => a.adminLevel === 5 || (a.description && a.description.includes('district')));
+        const parts = [
+          d.locality || d.city,
+          district ? district.name.replace(' district', '') : null,
+          d.principalSubdivision,
+          d.countryName,
+        ].filter(Boolean);
+        const unique = Array.from(new Set(parts));
+        if (unique.length > 0) return unique.join(', ');
+      }
+    } catch (e) {
+      console.warn('BigDataCloud geocode error:', e);
+    }
+
+    try {
+      const osmRes = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+      );
+      if (osmRes.ok) {
+        const d = await osmRes.json();
+        const addr = d.address || {};
+        const cleanParts = [
+          addr.suburb || addr.neighbourhood || addr.residential || addr.town || addr.city || addr.village,
+          addr.state_district || addr.county || addr.state,
+          addr.country,
+        ].filter(Boolean);
+        const unique = Array.from(new Set(cleanParts));
+        if (unique.length > 0) return unique.join(', ');
+        if (d.display_name) return d.display_name;
+      }
+    } catch (e) {
+      console.warn('OSM geocode error:', e);
+    }
+
+    return 'Verified Live Location';
+  };
+
   // 5. Update User Location & Protection Perimeter Circle on Leaflet Map
   const updateUserPositionOnMap = useCallback(
-    (lat: number, lng: number, accuracy?: number, assessmentStatus: 'safe' | 'caution' | 'danger' = 'safe') => {
+    (lat: number, lng: number, accuracy?: number, assessmentStatus: 'safe' | 'caution' | 'danger' = 'safe', locationName?: string) => {
       const map = mapInstanceRef.current;
       if (!map) return;
+
+      const displayName = locationName || realLocationName || weatherData?.location || 'Live Location';
 
       // Custom high-visibility multi-ring pulsing sonar beacon marker for live user location
       const userBeaconIcon = L.divIcon({
@@ -884,14 +933,13 @@ export const LiveTrackingPage: React.FC = () => {
               GPS ACTIVE
             </span>
           </div>
-          <div style="font-weight: 800; color: #0F172A; font-size: 14px; margin-bottom: 2px;">
-            ${weatherData?.location || 'Your Live Position'}
+          <div style="font-weight: 800; color: #0F172A; font-size: 14px; margin-bottom: 3px; line-height: 1.3;">
+            ${displayName}
           </div>
-          <div style="font-size: 11px; color: #64748B; margin-bottom: 4px;">
-            Live GPS Accuracy: ±${accuracy ? Math.round(accuracy) : '15'} meters
-          </div>
-          <div style="font-size: 11px; color: #0369A1; font-family: monospace; font-weight: 600; background: #F0F9FF; padding: 4px 6px; border-radius: 6px; border: 1px solid #BAE6FD;">
-            ${lat.toFixed(5)}°N, ${lng.toFixed(5)}°E
+          <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #0284C7; font-weight: 600; background: #F0F9FF; padding: 4px 8px; border-radius: 6px; border: 1px solid #BAE6FD; margin-top: 4px;">
+            <span>🛰️ Live Satellite Verified</span>
+            <span>•</span>
+            <span>±${accuracy ? Math.round(accuracy) : '15'}m Accuracy</span>
           </div>
         </div>
       `;
@@ -998,7 +1046,7 @@ export const LiveTrackingPage: React.FC = () => {
     setStatusText('Requesting GPS location access from browser...');
 
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
         setIsLocating(false);
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
@@ -1012,18 +1060,25 @@ export const LiveTrackingPage: React.FC = () => {
         });
 
         setStatusType('loading');
-        setStatusText(`Location acquired: Lat ${lat.toFixed(4)}°, Lon ${lng.toFixed(4)}°. Zooming to live satellite view...`);
-
-        // Plot live location marker on map with pulsing radar beacon
-        updateUserPositionOnMap(lat, lng, accuracy, 'safe');
+        setStatusText('Acquiring real location name from satellite GPS...');
 
         // Automatically zoom into live location on satellite map (Zoom 16: street & building level)
         if (mapInstanceRef.current) {
           mapInstanceRef.current.flyTo([lat, lng], 16, { duration: 1.8 });
         }
+
+        // Reverse geocode to get real human-readable location name
+        const placeName = await reverseGeocodePosition(lat, lng);
+        setRealLocationName(placeName);
+
+        // Plot live location marker on map with pulsing radar beacon and real place name
+        updateUserPositionOnMap(lat, lng, accuracy, 'safe', placeName);
         if (userMarkerRef.current) {
           userMarkerRef.current.openPopup();
         }
+
+        setStatusType('success');
+        setStatusText(`📍 Live location acquired: ${placeName}. Satellite radar active.`);
 
         // Simultaneously fetch Earthquake, Weather, Flood, and Drought Data
         fetchEarthquakesAround(lat, lng, radiusKm, minMagnitude, daysRange);
@@ -1745,15 +1800,13 @@ export const LiveTrackingPage: React.FC = () => {
         </div>
 
         {userLocation && (
-          <div className="hidden sm:flex items-center gap-2 font-mono text-[11px] text-slate-600 bg-white/80 px-2.5 py-1 rounded-lg border border-slate-200">
-            <span>LAT: {userLocation.lat.toFixed(4)}°</span>
-            <span>•</span>
-            <span>LON: {userLocation.lng.toFixed(4)}°</span>
+          <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-slate-800 bg-white/95 px-3 py-1.5 rounded-lg border border-slate-200 shadow-xs">
+            <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+            <span className="font-bold text-slate-900">{realLocationName || 'Resolving location name...'}</span>
             {userLocation.accuracy && (
-              <>
-                <span>•</span>
-                <span>±{Math.round(userLocation.accuracy)}m</span>
-              </>
+              <span className="text-[11px] text-slate-500 font-normal">
+                (±{Math.round(userLocation.accuracy)}m GPS)
+              </span>
             )}
           </div>
         )}
@@ -1771,7 +1824,7 @@ export const LiveTrackingPage: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-slate-900">{weatherData.location}</span>
+                <span className="text-sm font-bold text-slate-900">{realLocationName || weatherData.location}</span>
                 <span className="text-[10px] font-semibold px-2 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">
                   {weatherData.description}
                 </span>
