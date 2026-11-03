@@ -1698,12 +1698,12 @@ export const LiveTrackingPage: React.FC = () => {
         </div>
 
         {userLocation && (
-          <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-slate-800 bg-white/95 px-3 py-1.5 rounded-lg border border-slate-200 shadow-xs">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800 bg-white/95 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg border border-slate-200 shadow-xs shrink-0 max-w-[180px] sm:max-w-none truncate">
             <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-            <span className="font-bold text-slate-900">{realLocationName || 'Resolving location name...'}</span>
+            <span className="font-bold text-slate-900 truncate">{realLocationName || 'Resolving location...'}</span>
             {userLocation.accuracy && (
-              <span className="text-[11px] text-slate-500 font-normal">
-                (±{Math.round(userLocation.accuracy)}m GPS)
+              <span className="text-[11px] text-slate-500 font-normal hidden sm:inline">
+                (±{Math.round(userLocation.accuracy)}m)
               </span>
             )}
           </div>
@@ -1772,7 +1772,7 @@ export const LiveTrackingPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left: Leaflet Map Container */}
         <div className="lg:col-span-7 xl:col-span-8 flex flex-col space-y-3">
-          <div className="relative rounded-2xl overflow-hidden border border-slate-700/60 bg-slate-950 shadow-md h-[680px]">
+          <div className="relative rounded-2xl overflow-hidden border border-slate-700/60 bg-slate-950 shadow-md h-[400px] sm:h-[520px] lg:h-[680px]">
             <div id="live-tracking-map" ref={mapContainerRef} className="w-full h-full" />
 
             {/* Top-Right Floating Controls: Live Location Navigation */}
@@ -1879,7 +1879,7 @@ export const LiveTrackingPage: React.FC = () => {
 
         {/* Right: Threat Intelligence & 7 Multi-Hazard Tests / Feeds */}
         <div className="lg:col-span-5 xl:col-span-4 flex flex-col space-y-4">
-          <div className="bg-white p-4 rounded-2xl border border-[#E1E7EF] shadow-xs flex flex-col h-[760px]">
+          <div className="bg-white p-4 rounded-2xl border border-[#E1E7EF] shadow-xs flex flex-col min-h-[500px] lg:h-[760px]">
             {/* Top Header & View Switcher */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
               <div className="flex items-center gap-1.5">
