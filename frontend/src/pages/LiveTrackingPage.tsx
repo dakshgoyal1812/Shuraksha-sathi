@@ -858,35 +858,57 @@ export const LiveTrackingPage: React.FC = () => {
       const map = mapInstanceRef.current;
       if (!map) return;
 
-      // Custom pulsing beacon marker for user
+      // Custom high-visibility multi-ring pulsing sonar beacon marker for live user location
       const userBeaconIcon = L.divIcon({
         className: 'suraksha-user-beacon',
         html: `
-          <div class="relative flex items-center justify-center w-8 h-8">
-            <span class="animate-ping absolute inline-flex h-8 w-8 rounded-full bg-blue-500 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-5 w-5 bg-blue-600 border-2 border-white shadow-xl items-center justify-center">
-              <span class="h-2 w-2 rounded-full bg-white"></span>
+          <div class="relative flex items-center justify-center w-10 h-10">
+            <span class="animate-ping absolute inline-flex h-10 w-10 rounded-full bg-cyan-400 opacity-75"></span>
+            <span class="animate-pulse absolute inline-flex h-7 w-7 rounded-full bg-blue-500 opacity-50"></span>
+            <span class="relative inline-flex rounded-full h-5 w-5 bg-blue-600 border-2 border-white shadow-2xl items-center justify-center">
+              <span class="h-2 w-2 rounded-full bg-white shadow-sm"></span>
             </span>
           </div>
         `,
-        iconSize: [32, 32],
-        iconAnchor: [16, 16],
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
       });
 
-      if (!userMarkerRef.current) {
-        const marker = L.marker([lat, lng], { icon: userBeaconIcon }).addTo(map);
-        marker.bindPopup(`
-          <div style="font-family: system-ui, sans-serif; font-size: 13px; line-height: 1.4;">
-            <div style="font-weight: 800; color: #1E3A8A; margin-bottom: 2px;">📍 You Are Here</div>
-            <div style="font-size: 11px; color: #475569;">Live Location (Accurate to ±${accuracy ? Math.round(accuracy) : '15'}m)</div>
-            <div style="font-size: 11px; color: #64748B; font-family: monospace; margin-top: 4px;">
-              ${lat.toFixed(5)}°N, ${lng.toFixed(5)}°E
-            </div>
+      const popupHtml = `
+        <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 13px; line-height: 1.4; min-width: 220px; padding: 2px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid #E2E8F0; padding-bottom: 4px;">
+            <span style="font-weight: 800; color: #0284C7; font-size: 13px; display: flex; align-items: center; gap: 4px;">
+              📍 LIVE LOCATION
+            </span>
+            <span style="background: #10B981; color: #FFFFFF; font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 9999px; letter-spacing: 0.5px;">
+              GPS ACTIVE
+            </span>
           </div>
-        `);
+          <div style="font-weight: 800; color: #0F172A; font-size: 14px; margin-bottom: 2px;">
+            ${weatherData?.location || 'Your Live Position'}
+          </div>
+          <div style="font-size: 11px; color: #64748B; margin-bottom: 4px;">
+            Live GPS Accuracy: ±${accuracy ? Math.round(accuracy) : '15'} meters
+          </div>
+          <div style="font-size: 11px; color: #0369A1; font-family: monospace; font-weight: 600; background: #F0F9FF; padding: 4px 6px; border-radius: 6px; border: 1px solid #BAE6FD;">
+            ${lat.toFixed(5)}°N, ${lng.toFixed(5)}°E
+          </div>
+        </div>
+      `;
+
+      if (!userMarkerRef.current) {
+        const marker = L.marker([lat, lng], {
+          icon: userBeaconIcon,
+          zIndexOffset: 10000,
+        }).addTo(map);
+        marker.bindPopup(popupHtml);
+        marker.openPopup();
         userMarkerRef.current = marker;
       } else {
         userMarkerRef.current.setLatLng([lat, lng]);
+        userMarkerRef.current.setIcon(userBeaconIcon);
+        userMarkerRef.current.setPopupContent(popupHtml);
+        userMarkerRef.current.openPopup();
       }
 
       // Draw or update Protection Buffer Circle around user
@@ -990,13 +1012,18 @@ export const LiveTrackingPage: React.FC = () => {
         });
 
         setStatusType('loading');
-        setStatusText(`Location acquired: Lat ${lat.toFixed(2)}°, Lon ${lng.toFixed(2)}°. Evaluating Earthquake, Flood & Drought risks...`);
+        setStatusText(`Location acquired: Lat ${lat.toFixed(4)}°, Lon ${lng.toFixed(4)}°. Zooming to live satellite view...`);
 
-        // Center map on user
-        if (mapInstanceRef.current) {
-          mapInstanceRef.current.flyTo([lat, lng], 7.5, { duration: 1.5 });
-        }
+        // Plot live location marker on map with pulsing radar beacon
         updateUserPositionOnMap(lat, lng, accuracy, 'safe');
+
+        // Automatically zoom into live location on satellite map (Zoom 16: street & building level)
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.flyTo([lat, lng], 16, { duration: 1.8 });
+        }
+        if (userMarkerRef.current) {
+          userMarkerRef.current.openPopup();
+        }
 
         // Simultaneously fetch Earthquake, Weather, Flood, and Drought Data
         fetchEarthquakesAround(lat, lng, radiusKm, minMagnitude, daysRange);
@@ -1079,15 +1106,22 @@ export const LiveTrackingPage: React.FC = () => {
     }
   };
 
-  // Center on User button
+  // Center & Zoom to Live Location button
   const handleCenterOnUser = () => {
     if (userLocation && mapInstanceRef.current) {
-      mapInstanceRef.current.flyTo([userLocation.lat, userLocation.lng], 7.5, { duration: 1.2 });
+      mapInstanceRef.current.flyTo([userLocation.lat, userLocation.lng], 16, { duration: 1.5 });
       if (userMarkerRef.current) {
         userMarkerRef.current.openPopup();
       }
     } else {
       handleGetLocation();
+    }
+  };
+
+  // Zoom out to view complete 200km defense perimeter
+  const handleZoomPerimeter = () => {
+    if (userLocation && mapInstanceRef.current) {
+      mapInstanceRef.current.flyTo([userLocation.lat, userLocation.lng], 7.5, { duration: 1.5 });
     }
   };
 
@@ -1823,14 +1857,38 @@ export const LiveTrackingPage: React.FC = () => {
                 })}
               </div>
 
-              {/* Center on My Location Button */}
-              <button
-                onClick={handleCenterOnUser}
-                className="p-2.5 rounded-xl bg-slate-950/90 backdrop-blur-md text-white hover:text-emerald-400 hover:bg-slate-900 shadow-2xl border border-white/20 transition-all cursor-pointer"
-                title="Center map on my location"
-              >
-                <Crosshair className="w-4 h-4" />
-              </button>
+              {/* Live Location Navigation Actions */}
+              {userLocation ? (
+                <div className="flex items-center bg-slate-950/90 backdrop-blur-md p-1 rounded-xl border border-white/20 shadow-2xl gap-1">
+                  <button
+                    type="button"
+                    onClick={handleCenterOnUser}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow-md cursor-pointer"
+                    title="Zoom in to Live Location on Satellite Map"
+                  >
+                    <Crosshair className="w-3.5 h-3.5 text-white" />
+                    <span>Zoom Live Location</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleZoomPerimeter}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 text-xs font-semibold transition-all cursor-pointer"
+                    title={`Zoom out to view complete ${radiusKm} km Defense Radar Perimeter`}
+                  >
+                    <span>🛡️</span>
+                    <span className="hidden sm:inline">{radiusKm}km Area</span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleCenterOnUser}
+                  className="p-2.5 rounded-xl bg-slate-950/90 backdrop-blur-md text-white hover:text-emerald-400 hover:bg-slate-900 shadow-2xl border border-white/20 transition-all cursor-pointer"
+                  title="Detect GPS & Zoom to Live Location"
+                >
+                  <Crosshair className="w-4 h-4" />
+                </button>
+              )}
             </div>
 
             {/* Bottom-Left Real Earth Satellite Active Feed & Legend */}
