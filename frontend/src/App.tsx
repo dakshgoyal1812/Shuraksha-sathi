@@ -15,7 +15,6 @@ const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage').then(m => ({ de
 const ComparePage = lazy(() => import('./pages/ComparePage').then(m => ({ default: m.ComparePage })));
 const ReportsPage = lazy(() => import('./pages/ReportsPage').then(m => ({ default: m.ReportsPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
-const ArthaSetuStatsPage = lazy(() => import('./pages/ArthaSetuStatsPage').then(m => ({ default: m.ArthaSetuStatsPage })));
 const LiveTrackingPage = lazy(() => import('./pages/LiveTrackingPage').then(m => ({ default: m.LiveTrackingPage })));
 const Greenfield3DPage = lazy(() => import('./pages/Greenfield3DPage').then(m => ({ default: m.Greenfield3DPage })));
 
@@ -93,8 +92,9 @@ export function App() {
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/live-tracking" element={<LiveTrackingPage />} />
             <Route path="/live-map" element={<LiveTrackingPage />} />
-            <Route path="/stats" element={<ArthaSetuStatsPage />} />
-            <Route path="/arthasetu" element={<ArthaSetuStatsPage />} />
+            {/* Redirect any legacy links cleanly */}
+            <Route path="/stats" element={<AnalyticsPage />} />
+            <Route path="/arthasetu" element={<DashboardPage />} />
           </Routes>
         </Suspense>
       </AppLayout>

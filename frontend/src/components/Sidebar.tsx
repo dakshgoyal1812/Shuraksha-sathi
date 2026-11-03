@@ -30,19 +30,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const analyticsLink = activeScenarioId ? `/analytics/${activeScenarioId}` : '/analytics/default';
 
   const navItems = [
-    { name: 'Overview', to: '/dashboard', icon: LayoutDashboard },
-    { name: 'Live Hazard Tracker', to: '/live-tracking', icon: Radio },
-    { name: '3D City Simulation', to: '/3d', icon: Boxes },
-    { name: 'Scenario Builder', to: '/scenarios/new', icon: PlusCircle },
+    { name: 'Incident Command', to: '/dashboard', icon: LayoutDashboard },
+    { name: 'Live Hazard Radar', to: '/live-tracking', icon: Radio },
+    { name: '3D Evacuation Studio', to: '/3d', icon: Boxes },
     { name: 'Simulation Workspace', to: simLink, icon: PlaySquare },
-    { name: 'Shelters', to: '/shelters', icon: ShieldAlert },
-    { name: 'Analytics', to: analyticsLink, icon: BarChart3 },
-    { name: 'Strategy Comparison', to: '/compare', icon: GitCompare },
-    { name: 'Reports', to: '/reports', icon: FileText },
-    { name: 'Saved Scenarios', to: '/scenarios', icon: FolderKanban },
-    { name: 'Settings', to: '/settings', icon: Settings },
+    { name: 'Relief Shelters', to: '/shelters', icon: ShieldAlert },
+    { name: 'Analytics & Strategy', to: analyticsLink, icon: BarChart3 },
+    { name: 'Incident Reports', to: '/reports', icon: FileText },
+    { name: 'Scenario Library', to: '/scenarios', icon: FolderKanban },
+    { name: 'EOC Settings', to: '/settings', icon: Settings },
   ];
-
 
   return (
     <>
@@ -62,7 +59,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       >
         <div className="py-4 px-3 flex flex-col gap-1 overflow-y-auto">
           <div className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-[#94A3B8]">
-            Operations Menu
+            EOC Operations
           </div>
 
           {navItems.map((item) => (
@@ -71,7 +68,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               to={item.to}
               onClick={onClose}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
                   isActive
                     ? 'bg-slate-900 text-white font-semibold shadow-sm'
                     : 'text-[#65758B] hover:text-[#0F172A] hover:bg-slate-100/70'
@@ -84,14 +81,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
           ))}
         </div>
 
-        {/* Footer Warning / Model Disclaimer Notice */}
-        <div className="p-3 m-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-[#64748B]">
-          <div className="flex items-center gap-1.5 text-amber-700 font-semibold mb-1">
-            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-            <span>Simulation Disclaimer</span>
+        {/* EOC Incident Command Status Card */}
+        <div className="p-3.5 m-3 rounded-2xl bg-slate-950 text-white border border-slate-800 shadow-sm">
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-white">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Incident Command</span>
+            </div>
+            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
+              ACTIVE
+            </span>
           </div>
-          <p className="leading-tight text-slate-600">
-            Purely software-based model for planning exercises. Results are synthetic estimates.
+          <p className="text-[11px] text-slate-300 leading-snug">
+            Greenfield City Operations • Autonomous Evacuation Engine Online
           </p>
         </div>
       </aside>

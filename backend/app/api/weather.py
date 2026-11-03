@@ -191,8 +191,8 @@ def parse_air_pollution(data: Dict[str, Any]) -> Dict[str, Any]:
 
 @router.get("/hazards")
 def check_weather_hazards(
-    lat: float = Query(..., description="Latitude of user"),
-    lon: float = Query(..., description="Longitude of user")
+    lat: float = Query(..., ge=-90.0, le=90.0, description="Latitude of user (-90 to 90)"),
+    lon: float = Query(..., ge=-180.0, le=180.0, description="Longitude of user (-180 to 180)")
 ):
     """
     Fetches real-time multi-hazard telemetry in high-speed parallel workers:
@@ -213,7 +213,7 @@ def check_weather_hazards(
 
     current_url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric"
     forecast_url = f"https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={api_key}&units=metric"
-    pollution_url = f"http://api.openweathermap.org/data/2.5/air_pollution?lat={lat}&lon={lon}&appid={api_key}"
+    pollution_url = f"https://api.openweathermap.org/data/2.5/air_pollution?lat={lat}&lon={lon}&appid={api_key}"
 
     # Execute all 5 external data queries simultaneously with ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=5) as executor:

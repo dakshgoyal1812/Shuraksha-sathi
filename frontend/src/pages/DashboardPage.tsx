@@ -107,35 +107,28 @@ export const DashboardPage: React.FC = () => {
 
         {/* Quick Actions Bar */}
         <div className="flex flex-wrap items-center gap-2">
-          <Link
-            to="/scenarios/new"
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-black hover:bg-slate-800 text-white font-semibold text-xs transition shadow-xs"
-          >
-            <PlusCircle className="w-4 h-4 text-emerald-400" />
-            <span>New Scenario</span>
-          </Link>
           {scenarios.length > 0 && (
             <Link
               to={`/simulation/${scenarios[0].id}`}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 border border-[#E2E8F0] text-slate-800 font-semibold text-xs transition shadow-xs"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition shadow-xs"
             >
-              <Play className="w-4 h-4 fill-current text-blue-600" />
-              <span>Launch Drill</span>
+              <Play className="w-3.5 h-3.5 fill-current text-emerald-400" />
+              <span>Launch Active Drill</span>
             </Link>
           )}
           <Link
             to="/live-tracking"
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-semibold text-xs transition shadow-xs"
           >
-            <Radio className="w-4 h-4 text-rose-600 animate-pulse" />
-            <span>Live Hazard Tracker</span>
+            <Radio className="w-3.5 h-3.5 text-rose-600 animate-pulse" />
+            <span>Live Hazard Radar</span>
           </Link>
           <Link
-            to="/compare"
+            to="/scenarios/new"
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 border border-[#E2E8F0] text-slate-800 font-semibold text-xs transition shadow-xs"
           >
-            <GitCompare className="w-4 h-4 text-slate-600" />
-            <span>Compare</span>
+            <PlusCircle className="w-3.5 h-3.5 text-slate-600" />
+            <span>New Scenario</span>
           </Link>
         </div>
       </div>
@@ -143,49 +136,49 @@ export const DashboardPage: React.FC = () => {
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
         <MetricCard
-          label="Total Population"
+          label="District Population"
           value={metrics ? metrics.total_population.toLocaleString() : '—'}
-          unit="agents"
+          unit="residents"
           icon={Users}
-          description="Simulated synthetic population units."
+          description="Registered residents in Greenfield City district."
           status="normal"
         />
         <MetricCard
-          label="Evacuated"
+          label="Safe Arrivals"
           value={metrics ? metrics.successfully_evacuated.toLocaleString() : '—'}
           unit="safe"
           icon={CheckCircle}
-          description="Virtual evacuees arrived at designated shelter."
+          description="Evacuees verified at designated shelters."
           status="success"
         />
         <MetricCard
-          label="Remaining"
+          label="In Transit"
           value={metrics ? metrics.remaining_population.toLocaleString() : '—'}
-          unit="in network"
+          unit="en route"
           icon={Clock}
-          description="Agents en route or awaiting departure."
+          description="Evacuees moving along active corridors."
           status={metrics && metrics.remaining_population > 0 ? "warning" : "normal"}
         />
         <MetricCard
-          label="Completion Rate"
+          label="Clearance Rate"
           value={metrics ? `${metrics.evacuation_rate_pct}%` : '—'}
           icon={Percent}
-          description="Overall clearance percentage achieved."
+          description="District-wide evacuation completion."
           status={metrics && metrics.evacuation_rate_pct >= 90 ? "success" : "warning"}
         />
         <MetricCard
-          label="Bottlenecks"
+          label="Active Bottlenecks"
           value={metrics ? metrics.bottlenecks_detected_count : '—'}
-          unit="roads"
+          unit="corridors"
           icon={AlertTriangle}
-          description="Roads exceeding design capacity threshold."
+          description="Road segments exceeding throughput capacity."
           status={metrics && metrics.bottlenecks_detected_count > 0 ? "danger" : "success"}
         />
         <MetricCard
           label="Shelter Utilization"
           value={metrics ? `${metrics.total_shelter_utilization_pct}%` : '—'}
           icon={Building}
-          description="Aggregated occupancy vs available capacity."
+          description="Occupied municipal shelter capacity."
           status={metrics && metrics.total_shelter_utilization_pct >= 90 ? "warning" : "normal"}
         />
       </div>

@@ -77,12 +77,12 @@ export const LandingPage: React.FC = () => {
     {
       step: '01',
       title: 'Configure Scenario',
-      desc: 'Define hazard zones, select blocked roads, configure synthetic population size, and allocate shelter limits.'
+      desc: 'Define hazard perimeters, select blocked corridors, configure district population size, and allocate shelter capacity.'
     },
     {
       step: '02',
       title: 'Simulate Movement',
-      desc: 'Run the discrete-time simulation engine to advance virtual agents toward safe havens along graph edges.'
+      desc: 'Run the agent routing engine to advance evacuees toward safe relief centers along verified corridors.'
     },
     {
       step: '03',
@@ -101,8 +101,8 @@ export const LandingPage: React.FC = () => {
       <div className="grid-background pointer-events-none" aria-hidden="true"></div>
 
       {/* Top Banner */}
-      <div className="relative z-10 bg-white/80 backdrop-blur-xs border-b border-[#E1E7EF] py-1.5 px-4 text-center text-xs text-[#64748B] font-medium">
-        SIMULATED ENVIRONMENT: Greenfield City Synthetic Disaster Planning Drill • 100% Software-Based
+      <div className="relative z-10 bg-white/80 backdrop-blur-xs border-b border-[#E1E7EF] py-1.5 px-4 text-center text-xs text-[#64748B] font-semibold tracking-wide">
+        GREENFIELD CITY INCIDENT COMMAND • AUTONOMOUS EVACUATION &amp; DISASTER RESPONSE PLATFORM
       </div>
 
       {/* Hero Section */}

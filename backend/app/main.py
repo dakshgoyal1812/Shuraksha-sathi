@@ -102,9 +102,19 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=allow_credentials,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"],
     allow_headers=["*"],
 )
+
+# Enterprise HTTP Security Headers Middleware
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "geolocation=(self), microphone=(), camera=()"
+    return response
 
 # API Root (GET and HEAD for lightweight pings)
 @app.api_route("/", methods=["GET", "HEAD"])

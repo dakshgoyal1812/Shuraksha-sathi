@@ -373,9 +373,9 @@ export const ScenarioBuilderPage: React.FC = () => {
         {currentStep === 3 && (
           <div className="space-y-6 max-w-2xl">
             <div>
-              <h2 className="text-base font-bold text-[#0F172A] mb-1">Step 3: Synthetic Population Mobility Mix</h2>
+              <h2 className="text-base font-bold text-[#0F172A] mb-1">Step 3: Civilian Population Mobility Mix</h2>
               <p className="text-[#64748B] text-xs">
-                Configure synthetic demographic speed classes across the virtual population.
+                Configure demographic speed classes across civilian cohorts and transit units.
               </p>
             </div>
 

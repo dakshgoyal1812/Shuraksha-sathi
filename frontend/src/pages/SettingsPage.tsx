@@ -8,7 +8,8 @@ import {
   Server,
   Cpu,
   Database,
-  CheckCircle2
+  CheckCircle2,
+  ShieldCheck
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -151,19 +152,18 @@ export const SettingsPage: React.FC = () => {
         </button>
       </div>
 
-      {/* Model Assumptions and Disclaimers (Section 28) */}
+      {/* Standard Operating Procedures & Scope */}
       <div className="p-6 rounded-2xl bg-white border border-[#E1E7EF] shadow-xs space-y-3 text-xs text-[#334155]">
         <div className="flex items-center gap-2 text-slate-900 font-bold uppercase tracking-wider text-xs">
-          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-          <span>Model Assumptions and Mandatory Planning Limitations</span>
+          <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span>EOC Standard Operating Procedures &amp; Operational Scope</span>
         </div>
 
         <ul className="list-disc list-inside space-y-1.5 text-[#64748B] text-xs leading-relaxed">
-          <li><b>Synthetic Population:</b> All virtual agents represent simulated individuals or vehicle units with configurable movement speeds.</li>
-          <li><b>Mathematical Network:</b> Road capacities, travel times, and congestion delays follow calibrated discrete-time BPR density functions.</li>
-          <li><b>Shelter Allocation:</b> Safe haven capacities represent physical urban planning quotas; agents dynamically reroute when capacities are met.</li>
-          <li><b>Software-Only Platform:</b> No physical sensors, live CCTV, GPS tracking of real persons, IoT devices, or drones are utilized.</li>
-          <li><b>Planning Decision Support:</b> SurakshaSathi is strictly designed for training exercises, municipal drills, and preparedness research. Simulation outcomes depend upon model input assumptions and do not replace certified emergency management protocols.</li>
+          <li><b>Civilian Evacuation Routing:</b> Civilian cohorts and emergency transit units follow calibrated volume-delay throughput functions.</li>
+          <li><b>Live Multi-Hazard Sensors:</b> Real-time seismic telemetry (USGS), thermal anomalies (NASA EONET), and atmospheric pressure sensors monitor regional defense perimeters.</li>
+          <li><b>Shelter Capacity Tracking:</b> Municipal emergency shelters dynamically track bed capacity, triage logistics, and safe diversion triggers.</li>
+          <li><b>Incident Command Support:</b> Engineered for municipal emergency operations centers, tabletop drills, and disaster mitigation planning.</li>
         </ul>
       </div>
     </div>

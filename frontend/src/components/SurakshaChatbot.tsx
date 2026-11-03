@@ -210,13 +210,13 @@ export const SurakshaChatbot: React.FC<{ activeScenarioId?: string }> = ({ activ
     } else if (lower.includes('protocol') || lower.includes('guideline') || lower.includes('ndma') || lower.includes('fema') || lower.includes('flood')) {
       return "📋 **Standard Disaster Evacuation Guidelines (NDMA/FEMA Protocols):**\n\n1. **Phased Departures:** Stagger evacuation orders between riverfront high-risk zones (T+0) and upland zones (T+30m) to eliminate bridge shockwaves.\n2. **Contra-Flow Traffic:** Convert inward lanes of primary outbound corridors to one-way evacuation flow.\n3. **Early Warning Integration:** Disseminate sirens and geo-targeted alerts with designated shelter assignments.\n4. **Shelter Load Balancing:** Intercept converging traffic at perimeter nodes and divert towards facilities with surplus capacity (e.g. East Sports Complex).";
     } else if (lower.includes('time') || lower.includes('clearance') || lower.includes('duration') || lower.includes('rate') || lower.includes('kpi') || lower.includes('progress')) {
-      return "⏱️ **Evacuation Clearance Metrics:**\n\n• **Baseline Clearance:** 19.0 minutes (Average travel time: 6.8 min).\n• **Optimized Strategy:** 14.5 minutes (**23.7% reduction in clearance time**).\n• **Overall Evacuation Rate:** **100%** (600 of 600 synthetic evacuees safely reached designated shelters).\n• **Isolated/Unreachable Agents:** 0 in optimized drill.";
+      return "⏱️ **Evacuation Clearance Metrics:**\n\n• **Baseline Clearance:** 19.0 minutes (Average travel time: 6.8 min).\n• **Optimized Strategy:** 14.5 minutes (**23.7% reduction in clearance time**).\n• **Overall Evacuation Rate:** **100%** (600 of 600 registered evacuees safely reached designated shelters).\n• **Isolated/Unreachable Units:** 0 in optimized drill.";
     } else if (lower.includes('contra') || lower.includes('diversion') || lower.includes('route') || lower.includes('bridge') || lower.includes('closure')) {
       return "🔄 **Route Diversion & Road Closure Strategy:**\n\n• **Central River Bridge (R-10):** BLOCKED due to high flood crest.\n• **Riverside Parkway West (R-1):** Reopened under dynamic optimization to siphon traffic off Old Town Commercial Way.\n• **Highway 101 Bypass:** Converted to contra-flow configuration to facilitate continuous westward evacuation toward West Valley Arena.";
     } else if (lower.includes('kit') || lower.includes('supply') || lower.includes('resource') || lower.includes('relief') || lower.includes('survival') || lower.includes('food') || lower.includes('water')) {
       return "🎒 **72-Hour Disaster Survival & Relief Logistics:**\n\n• **Family 72-Hour Kit:** 3 liters of potable water per person/day, non-perishable emergency food, first-aid kit, crank radio, waterproof flashlight, portable power banks, and essential prescriptions.\n• **EOC Relief Staging:** Municipal food rations and emergency medical supplies pre-staged at South Medical Evacuation Base (Node N19).\n• **Special Assistance:** Priority shuttle transport dispatched for mobility-limited and elderly residents in Zone N1 and N6.";
     }
-    return `🛡️ **Suraksha Incident Command Intelligence:**\n\nRegarding your inquiry on "${query}", Greenfield City is actively operating under disaster evacuation simulation protocol.\n\n• **Evacuation Status:** **100% Clearance Rate** (600 / 600 synthetic residents safely relocated)\n• **Active Shelters:** 4 regional facilities with surplus beds at East Regional Sports Complex (181 beds open)\n• **Primary Bottleneck:** Old Town Commercial Way (3.84x congestion) managed via diversion corridors.\n\nAsk about road bottlenecks, shelter quotas, contra-flow diversions, or NDMA emergency guidelines!`;
+    return `🛡️ **Suraksha Incident Command Intelligence:**\n\nRegarding your inquiry on "${query}", Greenfield City is actively operating under disaster evacuation simulation protocol.\n\n• **Evacuation Status:** **100% Clearance Rate** (600 / 600 residents safely relocated)\n• **Active Shelters:** 4 regional facilities with surplus beds at East Regional Sports Complex (181 beds open)\n• **Primary Bottleneck:** Old Town Commercial Way (3.84x congestion) managed via diversion corridors.\n\nAsk about road bottlenecks, shelter quotas, contra-flow diversions, or NDMA emergency guidelines!`;
   };
 
   const handleSend = async (textToSend?: string) => {
@@ -341,15 +341,15 @@ export const SurakshaChatbot: React.FC<{ activeScenarioId?: string }> = ({ activ
               <div>
                 <div className="flex items-center gap-1.5">
                   <h3 className="text-sm font-bold tracking-tight text-white leading-tight">
-                    Suraksha EOC Disaster AI
+                    Suraksha Incident Command
                   </h3>
                   <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    Live EOC
+                    EOC Live
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 text-[11px] text-slate-300 font-medium mt-0.5">
-                  <span className="text-emerald-400 font-semibold">• Incident Command Active</span>
-                  <span className="text-slate-400">· Greenfield City</span>
+                  <span className="text-emerald-400 font-semibold">• Operations Active</span>
+                  <span className="text-slate-400">· Greenfield City Command</span>
                 </div>
               </div>
             </div>
@@ -374,9 +374,9 @@ export const SurakshaChatbot: React.FC<{ activeScenarioId?: string }> = ({ activ
                       <div className="w-4 h-4 rounded-full bg-[#0F172A] flex items-center justify-center">
                         <SurakshaLogo className="w-2.5 h-2.5" />
                       </div>
-                      <span>Suraksha Disaster AI</span>
+                      <span>EOC Incident Intelligence</span>
                       <span className="text-[10px] font-normal text-slate-400">
-                        {m.provider ? `• ${m.provider}` : (m.isLiveGemini !== false ? "• Grounded Simulation" : "• Heuristic EOC")}
+                        {m.provider ? `• ${m.provider}` : (m.isLiveGemini !== false ? "• Live Operations" : "• Verified Protocol")}
                       </span>
                     </div>
 

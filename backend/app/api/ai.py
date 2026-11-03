@@ -3,7 +3,7 @@ import json
 import urllib.request
 from pathlib import Path
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -23,8 +23,8 @@ if _env_path.exists():
 router = APIRouter(tags=["AI Explanation"])
 
 class ChatRequest(BaseModel):
-    message: str
-    scenario_id: Optional[str] = None
+    message: str = Field(..., min_length=1, max_length=2000, description="User emergency query")
+    scenario_id: Optional[str] = Field(None, max_length=100)
     history: Optional[List[Dict[str, str]]] = []
 
 # Primary & Failover Rotation API Keys loaded strictly from environment (.env)
@@ -38,8 +38,8 @@ def call_gemini_api(prompt: str, system_instruction: str = "") -> Optional[str]:
     if not api_key:
         return None
 
-    # Supported fast models
-    models = ["gemini-3.5-flash-lite", "gemini-flash-latest"]
+    # Supported fast production models
+    models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-flash-latest"]
     for model in models:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
         payload: Dict[str, Any] = {
