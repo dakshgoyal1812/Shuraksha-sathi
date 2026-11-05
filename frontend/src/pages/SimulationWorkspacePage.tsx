@@ -6,16 +6,9 @@ import {
   RotateCcw,
   SkipForward,
   Activity,
-  Layers,
   Shield,
-  AlertTriangle,
-  Building,
   Clock,
-  BarChart3,
-  Sliders,
-  ChevronRight,
-  TrendingUp,
-  MapPin
+  BarChart3
 } from 'lucide-react';
 import { GreenfieldMap } from '../components/GreenfieldMap';
 import { api } from '../services/api';
@@ -142,14 +135,14 @@ export const SimulationWorkspacePage: React.FC = () => {
   return (
     <div className="space-y-4">
       {/* Top Mission Control Bar */}
-      <div className="bg-white border border-[#E1E7EF] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+      <div className="bg-white border border-[#E1E7EF] rounded-2xl p-3.5 sm:p-5 shadow-xs flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-xl font-bold text-[#0F172A] tracking-tight">
+          <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+            <h1 className="text-lg sm:text-xl font-bold text-[#0F172A] tracking-tight">
               {scenario ? scenario.name : 'Simulation Workspace'}
             </h1>
             {scenario && (
-              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-lg bg-slate-100 text-[#0F172A] border border-[#E1E7EF] uppercase">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-slate-100 text-[#0F172A] border border-[#E1E7EF] uppercase">
                 {scenario.disaster_type} • {scenario.severity}
               </span>
             )}
@@ -160,12 +153,12 @@ export const SimulationWorkspacePage: React.FC = () => {
         </div>
 
         {/* Playback Controls & Speed */}
-        <div className="flex flex-wrap items-center gap-2 bg-slate-50/80 px-3 py-1.5 rounded-xl border border-[#E1E7EF]">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 bg-slate-50/80 p-2 sm:px-3 sm:py-1.5 rounded-xl border border-[#E1E7EF] w-full lg:w-auto overflow-x-auto">
           {/* Run/Recompute Engine */}
           <button
             onClick={handleRunFreshSimulation}
             disabled={isSimulating}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black hover:bg-slate-800 text-white font-semibold text-xs transition disabled:opacity-50 shadow-xs"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black hover:bg-slate-800 text-white font-semibold text-xs transition disabled:opacity-50 shadow-xs cursor-pointer"
             title="Execute graph simulation engine"
           >
             <Activity className={`w-3.5 h-3.5 ${isSimulating ? 'animate-spin' : ''}`} />
@@ -352,11 +345,11 @@ export const SimulationWorkspacePage: React.FC = () => {
                 roadCongestion={currentSnapshot?.road_congestion || {}}
                 activeBottlenecks={currentSnapshot?.active_bottlenecks || []}
                 shelterOccupancies={currentSnapshot?.shelter_occupancy || {}}
-                height="580px"
+                height={typeof window !== 'undefined' && window.innerWidth < 640 ? "380px" : "580px"}
               />
             </div>
           ) : (
-            <div className="h-[580px] rounded-2xl bg-white border border-[#E1E7EF] flex items-center justify-center text-[#64748B] text-xs shadow-xs">
+            <div className="h-[380px] sm:h-[580px] rounded-2xl bg-white border border-[#E1E7EF] flex items-center justify-center text-[#64748B] text-xs shadow-xs">
               Loading Greenfield City Road Network...
             </div>
           )}

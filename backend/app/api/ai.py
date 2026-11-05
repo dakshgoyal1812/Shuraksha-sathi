@@ -64,7 +64,7 @@ def call_gemini_api(prompt: str, system_instruction: str = "") -> Optional[str]:
                 data=json.dumps(payload).encode("utf-8"),
                 headers={"Content-Type": "application/json"}
             )
-            with urllib.request.urlopen(req, timeout=5) as resp:
+            with urllib.request.urlopen(req, timeout=12) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 candidates = data.get("candidates", [])
                 if candidates:
@@ -111,7 +111,7 @@ def call_openrouter_api(message: str, system_instruction: str = "", history: Opt
                     "X-Title": "Suraksha Evacuation Platform"
                 }
             )
-            with urllib.request.urlopen(req, timeout=7) as resp:
+            with urllib.request.urlopen(req, timeout=12) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 choices = data.get("choices", [])
                 if choices:

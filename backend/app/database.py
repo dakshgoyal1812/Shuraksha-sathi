@@ -26,9 +26,20 @@ else:
     SQLALCHEMY_DATABASE_URL = f"sqlite:///{DATABASE_FILE}"
 
 if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
+    from sqlalchemy import event
     engine = create_engine(
         SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
     )
+    @event.listens_for(engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        try:
+            cursor.execute("PRAGMA journal_mode=WAL")
+            cursor.execute("PRAGMA synchronous=NORMAL")
+        except Exception:
+            pass
+        finally:
+            cursor.close()
 else:
     engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

@@ -2,15 +2,12 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
-  PlusCircle,
   PlaySquare,
   ShieldAlert,
   BarChart3,
-  GitCompare,
   FileText,
   FolderKanban,
   Settings,
-  AlertTriangle,
   Radio,
   Boxes
 } from 'lucide-react';

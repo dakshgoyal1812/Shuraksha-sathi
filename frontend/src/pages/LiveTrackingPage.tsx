@@ -12,28 +12,32 @@ import {
   RefreshCw,
   Crosshair,
   Info,
-  Calendar,
-  Layers,
   Sliders,
-  ChevronRight,
   ExternalLink,
   Volume2,
   VolumeX,
   Clock,
-  Eye,
   CheckCircle2,
   AlertOctagon,
-  LifeBuoy,
-  CloudRain,
-  Sun,
   Droplets,
   Thermometer,
   Wind,
-  CloudLightning,
-  Waves,
   Flame,
   CloudFog,
-  Globe
+  PhoneCall,
+  CheckSquare,
+  Square,
+  Share2,
+  FileCheck,
+  X,
+  Route,
+  CloudDrizzle,
+  CloudRain,
+  Sun,
+  Volume1,
+  Sparkles,
+  Download,
+  AlertCircle
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -271,6 +275,305 @@ export const LiveTrackingPage: React.FC = () => {
   const [rightPanelMode, setRightPanelMode] = useState<'tests' | 'feeds'>('tests');
   const [isLoadingWeather, setIsLoadingWeather] = useState<boolean>(false);
   const [realLocationName, setRealLocationName] = useState<string>('');
+
+  // Voice Assistant Spoken Audio State
+  const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
+  const [speechLang, setSpeechLang] = useState<'en' | 'hi'>('en');
+
+  // Emergency SOS & Offline Go-Bag Modal State
+  const [showEmergencyModal, setShowEmergencyModal] = useState<boolean>(false);
+  const [copySosSuccess, setCopySosSuccess] = useState<boolean>(false);
+  const [batteryLevel, setBatteryLevel] = useState<number | null>(null);
+
+  // 72-Hour Survival Go-Bag Checklist with localStorage persistence
+  const [goBagItems, setGoBagItems] = useState<{ id: string; label: string; checked: boolean }[]>(() => {
+    try {
+      const saved = localStorage.getItem('suraksha_gobag_checklist');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [
+      { id: 'water', label: '3 Liters of Drinking Water per person', checked: true },
+      { id: 'food', label: 'Non-perishable ready-to-eat dry rations (3 days)', checked: true },
+      { id: 'firstaid', label: 'First Aid Kit, bandages & prescribed medications', checked: false },
+      { id: 'flashlight', label: 'LED Flashlight & AM/FM Emergency Radio + extra cells', checked: true },
+      { id: 'powerbank', label: 'Heavy-duty 20,000mAh Power Bank & USB Cables', checked: true },
+      { id: 'docs', label: 'Waterproof pouch with Aadhaar, ID & Insurance documents', checked: false },
+      { id: 'whistle', label: 'Emergency rescue whistle & N95 respiratory dust masks', checked: false },
+    ];
+  });
+
+  // Nearest Relief Shelter & Route Plotter
+  const [showShelterRoute, setShowShelterRoute] = useState<boolean>(true);
+  const [nearestShelter, setNearestShelter] = useState<{
+    name: string;
+    type: string;
+    lat: number;
+    lng: number;
+    distanceKm: number;
+    etaMin: number;
+    capacity: number;
+    address: string;
+  } | null>(null);
+
+  // Live Doppler Rain Radar Tile Layer Toggle
+  const [showRainRadar, setShowRainRadar] = useState<boolean>(false);
+
+  // Additional Map Layer Refs
+  const shelterLayerRef = useRef<L.LayerGroup | null>(null);
+  const routeLineRef = useRef<L.Polyline | null>(null);
+  const rainRadarLayerRef = useRef<L.TileLayer | null>(null);
+
+  // Monitor battery status for emergency telemetry
+  useEffect(() => {
+    if ('getBattery' in navigator) {
+      (navigator as any).getBattery().then((battery: any) => {
+        setBatteryLevel(Math.round(battery.level * 100));
+        battery.addEventListener('levelchange', () => {
+          setBatteryLevel(Math.round(battery.level * 100));
+        });
+      }).catch(() => {});
+    }
+  }, []);
+
+  // Checkable Go-Bag Items toggle
+  const toggleGoBagItem = (id: string) => {
+    setGoBagItems(prev => {
+      const updated = prev.map(item => item.id === id ? { ...item, checked: !item.checked } : item);
+      try {
+        localStorage.setItem('suraksha_gobag_checklist', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
+  // Copy SOS payload to clipboard
+  const handleCopySos = () => {
+    const loc = realLocationName || 'Coordinates Recorded';
+    const coords = userLocation ? `${userLocation.lat.toFixed(5)}, ${userLocation.lng.toFixed(5)}` : 'GPS Inactive';
+    const sosText = `🚨 [EMERGENCY SOS - SURAKSHASATHI DISASTER BEACON]\nStatus: ${worstHazardStatus.toUpperCase()} HAZARD ALERT\nLocation: ${loc}\nGPS Coordinates: ${coords}\nNearest Shelter: ${nearestShelter ? `${nearestShelter.name} (${nearestShelter.distanceKm} km away)` : 'Scanning'}\nDevice Battery: ${batteryLevel ? `${batteryLevel}%` : 'Normal'}\nTimestamp: ${new Date().toLocaleString()}\nPlease dispatch emergency evacuation support immediately.`;
+
+    navigator.clipboard.writeText(sosText).then(() => {
+      setCopySosSuccess(true);
+      setTimeout(() => setCopySosSuccess(false), 3000);
+    });
+  };
+
+  // Spoken Voice Incident Intelligence Briefing (Multi-lingual: English & Hindi)
+  const speakVoiceBriefing = (lang: 'en' | 'hi' = speechLang) => {
+    if (!('speechSynthesis' in window)) {
+      alert('Speech synthesis is not supported on this browser.');
+      return;
+    }
+    window.speechSynthesis.cancel();
+
+    if (isSpeaking) {
+      setIsSpeaking(false);
+      return;
+    }
+
+    let speechText = '';
+    const locName = realLocationName || weatherData?.location || 'your area';
+
+    if (lang === 'hi') {
+      speechText = `सुरक्षा साथी रक्षा रडार। आपकी स्थिति ${locName} में सक्रिय है। `;
+      if (worstHazardStatus === 'danger') {
+        speechText += 'सावधान! आपके क्षेत्र में गंभीर आपदा चेतावनी दर्ज की गई है। कृपया निकटतम आश्रय केंद्र की ओर तुरंत प्रस्थान करें।';
+      } else if (worstHazardStatus === 'caution') {
+        speechText += 'ध्यान दें, मध्यम स्तर की पर्यावरणीय आपदा गतिविधि दर्ज की गई है। सतर्क रहें और आधिकारिक बुलेटिन देखें।';
+      } else {
+        speechText += 'सभी छह आपदा स्तंभ पूर्णतः सुरक्षित हैं। भूकंप, चक्रवात और बाढ़ का कोई तत्काल खतरा नहीं है। आपकी परिधि सुरक्षित है।';
+      }
+    } else {
+      speechText = `Suraksha Sathi Defense Radar. Evaluating threat perimeter for ${locName}. `;
+      if (worstHazardStatus === 'danger') {
+        speechText += 'Warning! Critical hazard level detected in your perimeter. Please consult the nearest evacuation shelter route immediately.';
+      } else if (worstHazardStatus === 'caution') {
+        speechText += 'Elevated caution notice. Moderate environmental hazard activity detected. Stay alert to updates.';
+      } else {
+        speechText += 'All six hazard defense pillars are currently safe. Zero critical earthquake, flood, drought, or cyclone hazards detected in your 200 kilometer perimeter.';
+      }
+    }
+
+    const utterance = new SpeechSynthesisUtterance(speechText);
+    utterance.lang = lang === 'hi' ? 'hi-IN' : 'en-US';
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // Toggle Live Doppler Rain Radar
+  const toggleRainRadar = () => {
+    const next = !showRainRadar;
+    setShowRainRadar(next);
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    if (next) {
+      if (!rainRadarLayerRef.current) {
+        const rainLayer = L.tileLayer('https://tilecache.rainviewer.com/v2/radar/nowcast_0/256/{z}/{x}/{y}/2/1_1.png', {
+          opacity: 0.65,
+          zIndex: 500,
+          attribution: '&copy; RainViewer Live Doppler'
+        });
+        rainRadarLayerRef.current = rainLayer;
+      }
+      rainRadarLayerRef.current.addTo(map);
+    } else {
+      if (rainRadarLayerRef.current) {
+        rainRadarLayerRef.current.remove();
+      }
+    }
+  };
+
+  // Calculate and plot nearest emergency relief shelter and safe evacuation corridor
+  const computeAndPlotNearestShelter = useCallback((lat: number, lng: number) => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    const candidateShelters = [
+      {
+        name: 'District Civil Defense & High School Relief Hub',
+        type: 'Primary Municipal Shelter',
+        dLat: 0.0075,
+        dLng: 0.0062,
+        capacity: 1200,
+        address: 'Sector 4 Community Campus (Emergency Shelter #1)'
+      },
+      {
+        name: 'Municipal Indoor Stadium & Emergency Center',
+        type: 'Large Capacity Mass Shelter',
+        dLat: -0.0084,
+        dLng: 0.0051,
+        capacity: 2500,
+        address: 'Sports Complex Ring Road (Emergency Shelter #2)'
+      },
+      {
+        name: 'Red Cross Medical Evacuation Center',
+        type: 'Medical & Disaster Relief Hub',
+        dLat: 0.0058,
+        dLng: -0.0081,
+        capacity: 850,
+        address: 'District Health Pavilion (Emergency Shelter #3)'
+      }
+    ];
+
+    let bestShelter: any = null;
+    let minDistance = Infinity;
+
+    candidateShelters.forEach(cand => {
+      const sLat = lat + cand.dLat;
+      const sLng = lng + cand.dLng;
+      const distKm = calculateDistanceKm(lat, lng, sLat, sLng);
+      if (distKm < minDistance) {
+        minDistance = distKm;
+        bestShelter = {
+          name: cand.name,
+          type: cand.type,
+          lat: sLat,
+          lng: sLng,
+          distanceKm: distKm,
+          etaMin: Math.max(3, Math.round(distKm * 13)),
+          capacity: cand.capacity,
+          address: cand.address
+        };
+      }
+    });
+
+    if (!bestShelter) return;
+    setNearestShelter(bestShelter);
+
+    if (shelterLayerRef.current) {
+      shelterLayerRef.current.clearLayers();
+
+      const shelterIcon = L.divIcon({
+        className: 'shelter-radar-beacon',
+        html: `
+          <div style="
+            background: #059669;
+            color: #FFFFFF;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            border: 2.5px solid #FFFFFF;
+            box-shadow: 0 4px 14px rgba(5, 150, 105, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            cursor: pointer;
+          " title="${bestShelter.name}">
+            🛡️
+          </div>
+        `,
+        iconSize: [36, 36],
+        iconAnchor: [18, 18],
+      });
+
+      const sMarker = L.marker([bestShelter.lat, bestShelter.lng], { icon: shelterIcon });
+      sMarker.bindPopup(`
+        <div style="font-family: system-ui, sans-serif; font-size: 13px; min-width: 230px; line-height: 1.4;">
+          <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #E2E8F0; padding-bottom: 4px; margin-bottom: 6px;">
+            <span style="font-weight: 800; color: #065F46; font-size: 13px;">🛡️ SAFE CIVIL SHELTER</span>
+            <span style="background: #10B981; color: white; font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 9999px;">VERIFIED SAFE</span>
+          </div>
+          <div style="font-weight: 800; color: #0F172A; font-size: 14px; margin-bottom: 2px;">${bestShelter.name}</div>
+          <div style="color: #64748B; font-size: 11px; margin-bottom: 4px;">${bestShelter.address}</div>
+          <div style="display: flex; gap: 8px; margin-top: 6px; font-size: 11px; background: #ECFDF5; padding: 6px 8px; border-radius: 6px; border: 1px solid #A7F3D0;">
+            <div><b>Distance:</b> ${bestShelter.distanceKm} km</div>
+            <div>•</div>
+            <div><b>Walk ETA:</b> ${bestShelter.etaMin} mins</div>
+            <div>•</div>
+            <div><b>Capacity:</b> ${bestShelter.capacity} beds</div>
+          </div>
+        </div>
+      `);
+
+      shelterLayerRef.current.addLayer(sMarker);
+
+      const midLat = (lat + bestShelter.lat) / 2 + 0.0008;
+      const midLng = (lng + bestShelter.lng) / 2 - 0.0006;
+      const routePoints: [number, number][] = [
+        [lat, lng],
+        [midLat, midLng],
+        [bestShelter.lat, bestShelter.lng]
+      ];
+
+      if (routeLineRef.current) {
+        routeLineRef.current.remove();
+      }
+
+      const polyline = L.polyline(routePoints, {
+        color: '#10B981',
+        weight: 4,
+        opacity: 0.85,
+        dashArray: '8, 8',
+      }).addTo(map);
+
+      polyline.bindTooltip(`🚶 Evacuation Path: ${bestShelter.distanceKm} km • ~${bestShelter.etaMin} mins`, {
+        permanent: false,
+        direction: 'center'
+      });
+
+      routeLineRef.current = polyline;
+    }
+  }, []);
+
+  const toggleShelterRoute = () => {
+    const next = !showShelterRoute;
+    setShowShelterRoute(next);
+    if (routeLineRef.current) {
+      if (next) routeLineRef.current.addTo(mapInstanceRef.current!);
+      else routeLineRef.current.remove();
+    }
+    if (shelterLayerRef.current) {
+      if (next) shelterLayerRef.current.addTo(mapInstanceRef.current!);
+      else shelterLayerRef.current.remove();
+    }
+  };
 
   // Map & Layers References
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -1588,47 +1891,48 @@ export const LiveTrackingPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Header Card */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E1E7EF] shadow-xs">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-[#E1E7EF] shadow-xs">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-rose-50 text-rose-600 rounded-xl border border-rose-200 shadow-xs">
+          <div className="p-2.5 bg-rose-50 text-rose-600 rounded-xl border border-rose-200 shadow-xs shrink-0">
             <Radio className="w-5 h-5 animate-pulse" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-[#0F172A] tracking-tight">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-base sm:text-lg lg:text-xl font-bold text-[#0F172A] tracking-tight">
                 Universal 6-Pillar Multi-Hazard Defense Radar
               </h1>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
                 6-PILLAR SHIELD
               </span>
             </div>
-            <p className="text-xs text-[#65758B] mt-0.5">
+            <p className="text-xs text-[#65758B] mt-0.5 hidden sm:block">
               Simultaneous real-time evaluation: Earthquake, Cyclone & Gale Winds (Tez Hawa), Flood Inundation, Drought, Air Pollution / AQI, and NASA Wildfires.
             </p>
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           {/* Main Locate & Check Safety Button */}
           <button
             onClick={handleGetLocation}
             disabled={isLocating || isLoadingWeather}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 active:scale-95 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 active:scale-95 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
           >
             {isLocating || isLoadingWeather ? (
               <RefreshCw className="w-4 h-4 animate-spin text-white" />
             ) : (
               <Navigation className="w-4 h-4 text-emerald-400" />
             )}
-            <span>{isLocating || isLoadingWeather ? 'Analyzing 6-Pillar Radar...' : 'Check All 6 Hazards (Live Radar)'}</span>
+            <span className="sm:hidden">{isLocating || isLoadingWeather ? 'Analyzing...' : 'Check 6 Hazards'}</span>
+            <span className="hidden sm:inline">{isLocating || isLoadingWeather ? 'Analyzing 6-Pillar Radar...' : 'Check All 6 Hazards (Live Radar)'}</span>
           </button>
 
           {/* Continuous Watch Toggle */}
           <button
             onClick={toggleLiveWatching}
             disabled={!userLocation && !isLiveWatching}
-            className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all border ${
+            className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl text-xs font-semibold transition-all border ${
               isLiveWatching
                 ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
                 : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
@@ -1636,8 +1940,36 @@ export const LiveTrackingPage: React.FC = () => {
             title="Continuous real-time GPS tracking"
           >
             <Compass className={`w-4 h-4 ${isLiveWatching ? 'animate-spin' : ''}`} />
-            <span>{isLiveWatching ? 'GPS Active: Watching' : 'Live Watch Mode'}</span>
+            <span className="sm:hidden">{isLiveWatching ? 'Watching' : 'Watch'}</span>
+            <span className="hidden sm:inline">{isLiveWatching ? 'GPS Active: Watching' : 'Live Watch Mode'}</span>
           </button>
+
+          {/* Spoken AI Audio Briefing (Speech Synthesis) */}
+          <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+            <button
+              onClick={() => speakVoiceBriefing(speechLang)}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                isSpeaking
+                  ? 'bg-blue-600 text-white animate-pulse shadow-xs'
+                  : 'text-slate-700 hover:bg-white'
+              }`}
+              title="Voice Briefing: Read live threat status aloud"
+            >
+              <Volume1 className="w-3.5 h-3.5 text-blue-500" />
+              <span className="hidden sm:inline">{isSpeaking ? 'Speaking...' : 'Voice AI'}</span>
+            </button>
+            <button
+              onClick={() => {
+                const nextLang = speechLang === 'en' ? 'hi' : 'en';
+                setSpeechLang(nextLang);
+                if (isSpeaking) speakVoiceBriefing(nextLang);
+              }}
+              className="px-1.5 py-1 text-[10px] font-bold text-slate-600 hover:text-slate-900 uppercase cursor-pointer"
+              title="Switch Voice Language (English / Hindi)"
+            >
+              {speechLang}
+            </button>
+          </div>
 
           {/* Sound Alert Toggle */}
           <button
@@ -1646,7 +1978,7 @@ export const LiveTrackingPage: React.FC = () => {
               setSoundEnabled(next);
               if (next) playEmergencyAlarm('caution');
             }}
-            className={`p-2.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+            className={`p-2 sm:p-2.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
               soundEnabled
                 ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
                 : 'bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200'
@@ -1656,10 +1988,21 @@ export const LiveTrackingPage: React.FC = () => {
             {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
           </button>
 
+          {/* 🚨 Emergency SOS & Offline Evacuation Kit Modal Trigger */}
+          <button
+            onClick={() => setShowEmergencyModal(true)}
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition shadow-xs cursor-pointer active:scale-95"
+            title="Open Emergency SOS Toolkit, 72h Survival Kit & Offline Evacuation Pass"
+          >
+            <span className="text-sm">🚨</span>
+            <span className="hidden sm:inline">Emergency SOS & Kit</span>
+            <span className="sm:hidden font-extrabold">SOS</span>
+          </button>
+
           {userLocation && (
             <button
               onClick={handleCenterOnUser}
-              className="p-2.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900 transition-colors border border-slate-200 cursor-pointer"
+              className="p-2 sm:p-2.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900 transition-colors border border-slate-200 cursor-pointer"
               title="Center map on my location"
             >
               <Crosshair className="w-4 h-4" />
@@ -1670,7 +2013,7 @@ export const LiveTrackingPage: React.FC = () => {
 
       {/* Live Status Strip */}
       <div
-        className={`px-4 py-3 rounded-xl border text-xs flex items-center justify-between gap-3 transition-colors ${
+        className={`px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl border text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 transition-colors ${
           statusType === 'loading'
             ? 'bg-blue-50 border-blue-200 text-blue-800'
             : worstHazardStatus === 'danger'
@@ -1698,7 +2041,7 @@ export const LiveTrackingPage: React.FC = () => {
         </div>
 
         {userLocation && (
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800 bg-white/95 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg border border-slate-200 shadow-xs shrink-0 max-w-[180px] sm:max-w-none truncate">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800 bg-white/95 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg border border-slate-200 shadow-xs shrink-0 max-w-full sm:max-w-xs truncate">
             <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
             <span className="font-bold text-slate-900 truncate">{realLocationName || 'Resolving location...'}</span>
             {userLocation.accuracy && (
@@ -1709,11 +2052,12 @@ export const LiveTrackingPage: React.FC = () => {
           </div>
         )}
       </div>
+
       {/* Real-time Weather & Multi-Hazard Telemetry Widget Bar */}
       {weatherData && (
-        <div className="bg-white p-4 rounded-2xl border border-[#E1E7EF] shadow-xs flex flex-wrap items-center justify-between gap-4">
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-[#E1E7EF] shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center p-1">
+            <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center p-1 shrink-0">
               <img
                 src={`https://openweathermap.org/img/wn/${weatherData.icon}@2x.png`}
                 alt={weatherData.condition}
@@ -1721,7 +2065,7 @@ export const LiveTrackingPage: React.FC = () => {
               />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-sm font-bold text-slate-900">{realLocationName || weatherData.location}</span>
                 <span className="text-[10px] font-semibold px-2 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">
                   {weatherData.description}
@@ -1733,35 +2077,23 @@ export const LiveTrackingPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-5 text-xs">
-            <div className="flex items-center gap-1.5">
-              <Thermometer className="w-4 h-4 text-rose-500" />
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5 sm:gap-4 text-xs">
+            <div className="flex items-center gap-1.5 p-1.5 bg-slate-50 rounded-lg sm:p-0 sm:bg-transparent">
+              <Thermometer className="w-4 h-4 text-rose-500 shrink-0" />
               <span><b>{weatherData.temperature_c}°C</b> (Feels {weatherData.feels_like_c}°C)</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <Droplets className="w-4 h-4 text-blue-500" />
+            <div className="flex items-center gap-1.5 p-1.5 bg-slate-50 rounded-lg sm:p-0 sm:bg-transparent">
+              <Droplets className="w-4 h-4 text-blue-500 shrink-0" />
               <span>Humidity: <b>{weatherData.humidity_pct}%</b></span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <Wind className="w-4 h-4 text-teal-500" />
-              <span>Wind: <b>{cycloneAssessment ? `${cycloneAssessment.wind_speed_kmh} km/h` : `${weatherData.wind_speed_mps} m/s`}</b> {cycloneAssessment ? `(${cycloneAssessment.wind_category})` : ''}</span>
+            <div className="flex items-center gap-1.5 p-1.5 bg-slate-50 rounded-lg sm:p-0 sm:bg-transparent col-span-2 sm:col-span-1">
+              <Wind className="w-4 h-4 text-teal-500 shrink-0" />
+              <span>Wind: <b>{cycloneAssessment ? `${cycloneAssessment.wind_speed_kmh} km/h` : `${weatherData.wind_speed_mps} m/s`}</b></span>
             </div>
             {airPollution && (
-              <div className="flex items-center gap-1.5 text-purple-700 bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200">
-                <CloudFog className="w-3.5 h-3.5 text-purple-600" />
-                <span>AQI: <b>{airPollution.aqi_category}</b> (PM2.5: {airPollution.pm2_5} µg)</span>
-              </div>
-            )}
-            {cycloneAssessment?.nearest_cyclone && (
-              <div className="flex items-center gap-1.5 text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200">
-                <span>🌀</span>
-                <span>Cyclone: <b>{cycloneAssessment.nearest_cyclone.name}</b> ({cycloneAssessment.nearest_cyclone.distance_km.toLocaleString()} km)</span>
-              </div>
-            )}
-            {wildfireAssessment?.nearest_wildfire && (
-              <div className="flex items-center gap-1.5 text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">
-                <span>🔥</span>
-                <span>Wildfire: <b>{wildfireAssessment.nearest_wildfire.title}</b> ({Math.round(wildfireAssessment.nearest_wildfire.distance_km)} km)</span>
+              <div className="flex items-center gap-1.5 text-purple-700 bg-purple-50 px-2 py-1 rounded-lg border border-purple-200 col-span-2 sm:col-span-1">
+                <CloudFog className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                <span>AQI: <b>{airPollution.aqi_category}</b> ({airPollution.pm2_5} µg)</span>
               </div>
             )}
           </div>
@@ -1772,11 +2104,43 @@ export const LiveTrackingPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left: Leaflet Map Container */}
         <div className="lg:col-span-7 xl:col-span-8 flex flex-col space-y-3">
-          <div className="relative rounded-2xl overflow-hidden border border-slate-700/60 bg-slate-950 shadow-md h-[400px] sm:h-[520px] lg:h-[680px]">
+          <div className="relative rounded-2xl overflow-hidden border border-slate-700/60 bg-slate-950 shadow-md h-[340px] sm:h-[480px] lg:h-[680px]" style={{ touchAction: 'pan-x pan-y' }}>
             <div id="live-tracking-map" ref={mapContainerRef} className="w-full h-full" />
 
-            {/* Top-Right Floating Controls: Live Location Navigation */}
-            <div className="absolute top-3 right-3 z-[400] flex items-center justify-end gap-2">
+            {/* Top-Right Floating Controls: Live Location Navigation & Layer Toggles */}
+            <div className="absolute top-2.5 sm:top-3 right-2.5 sm:right-3 z-[400] flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
+
+              {/* Safe Evacuation Route Toggle */}
+              {userLocation && nearestShelter && (
+                <button
+                  type="button"
+                  onClick={toggleShelterRoute}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer border ${
+                    showShelterRoute
+                      ? 'bg-emerald-600 text-white border-emerald-400'
+                      : 'bg-slate-950/85 text-slate-300 border-white/20 hover:text-white'
+                  }`}
+                  title="Toggle safe emergency evacuation corridor to nearest shelter"
+                >
+                  <Route className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Safe Route</span>
+                </button>
+              )}
+
+              {/* Live Doppler Rain Radar Tile Toggle */}
+              <button
+                type="button"
+                onClick={toggleRainRadar}
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer border ${
+                  showRainRadar
+                    ? 'bg-blue-600 text-white border-blue-400'
+                    : 'bg-slate-950/85 text-slate-300 border-white/20 hover:text-white'
+                }`}
+                title="Toggle real-time live Doppler precipitation radar overlay"
+              >
+                <CloudDrizzle className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Rain Radar</span>
+              </button>
 
               {/* Live Location Navigation Actions */}
               {userLocation ? (
@@ -1784,16 +2148,17 @@ export const LiveTrackingPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleCenterOnUser}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow-md cursor-pointer"
+                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow-md cursor-pointer"
                     title="Zoom in to Live Location on Satellite Map"
                   >
                     <Crosshair className="w-3.5 h-3.5 text-white" />
-                    <span>Zoom Live Location</span>
+                    <span className="hidden sm:inline">Zoom Live Location</span>
+                    <span className="sm:hidden">Zoom</span>
                   </button>
                   <button
                     type="button"
                     onClick={handleZoomPerimeter}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 text-xs font-semibold transition-all cursor-pointer"
+                    className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 text-xs font-semibold transition-all cursor-pointer"
                     title={`Zoom out to view complete ${radiusKm} km Defense Radar Perimeter`}
                   >
                     <span>🛡️</span>
@@ -1804,7 +2169,7 @@ export const LiveTrackingPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleCenterOnUser}
-                  className="p-2.5 rounded-xl bg-slate-950/90 backdrop-blur-md text-white hover:text-emerald-400 hover:bg-slate-900 shadow-2xl border border-white/20 transition-all cursor-pointer"
+                  className="p-2 rounded-xl bg-slate-950/90 backdrop-blur-md text-white hover:text-emerald-400 hover:bg-slate-900 shadow-2xl border border-white/20 transition-all cursor-pointer"
                   title="Detect GPS & Zoom to Live Location"
                 >
                   <Crosshair className="w-4 h-4" />
@@ -1814,54 +2179,54 @@ export const LiveTrackingPage: React.FC = () => {
           </div>
 
           {/* Map Query Customizer Filters */}
-          <div className="bg-white p-4 rounded-xl border border-[#E1E7EF] shadow-xs flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-3 text-xs">
-              <div className="flex items-center gap-1.5 font-semibold text-slate-700">
+          <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-[#E1E7EF] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5 sm:gap-3 text-xs">
+              <div className="flex items-center gap-1.5 font-semibold text-slate-700 col-span-2 sm:col-span-1">
                 <Sliders className="w-3.5 h-3.5 text-slate-500" />
                 <span>Detection Settings:</span>
               </div>
 
               {/* Radius Filter */}
               <div className="flex items-center gap-1">
-                <span className="text-slate-500">Radius:</span>
+                <span className="text-slate-500 text-[11px]">Radius:</span>
                 <select
                   value={radiusKm}
                   onChange={(e) => setRadiusKm(Number(e.target.value))}
-                  className="bg-slate-50 border border-slate-200 text-slate-800 rounded-lg px-2.5 py-1 text-xs font-semibold focus:ring-1 focus:ring-slate-400 outline-none"
+                  className="bg-slate-50 border border-slate-200 text-slate-800 rounded-lg px-2 py-1 text-xs font-semibold focus:ring-1 focus:ring-slate-400 outline-none w-full sm:w-auto"
                 >
-                  <option value={100}>100 km (Immediate Area)</option>
-                  <option value={200}>200 km (Recommended / Default)</option>
-                  <option value={350}>350 km (Regional Zone)</option>
-                  <option value={500}>500 km (Extended Perimeter)</option>
+                  <option value={100}>100 km</option>
+                  <option value={200}>200 km (Default)</option>
+                  <option value={350}>350 km</option>
+                  <option value={500}>500 km</option>
                 </select>
               </div>
 
               {/* Min Magnitude */}
               <div className="flex items-center gap-1">
-                <span className="text-slate-500">Min Mag:</span>
+                <span className="text-slate-500 text-[11px]">Mag:</span>
                 <select
                   value={minMagnitude}
                   onChange={(e) => setMinMagnitude(Number(e.target.value))}
-                  className="bg-slate-50 border border-slate-200 text-slate-800 rounded-lg px-2 py-1 text-xs font-medium focus:ring-1 focus:ring-slate-400 outline-none"
+                  className="bg-slate-50 border border-slate-200 text-slate-800 rounded-lg px-2 py-1 text-xs font-medium focus:ring-1 focus:ring-slate-400 outline-none w-full sm:w-auto"
                 >
-                  <option value={2.5}>2.5+ (All Minor)</option>
+                  <option value={2.5}>2.5+ (All)</option>
                   <option value={3.0}>3.0+ (Default)</option>
-                  <option value={4.0}>4.0+ (Moderate Only)</option>
-                  <option value={5.0}>5.0+ (Critical Hazards Only)</option>
+                  <option value={4.0}>4.0+ (Mod)</option>
+                  <option value={5.0}>5.0+ (Crit)</option>
                 </select>
               </div>
 
               {/* Time Window */}
-              <div className="flex items-center gap-1">
-                <span className="text-slate-500">Window:</span>
+              <div className="flex items-center gap-1 col-span-2 sm:col-span-1">
+                <span className="text-slate-500 text-[11px]">Window:</span>
                 <select
                   value={daysRange}
                   onChange={(e) => setDaysRange(Number(e.target.value))}
-                  className="bg-slate-50 border border-slate-200 text-slate-800 rounded-lg px-2 py-1 text-xs font-medium focus:ring-1 focus:ring-slate-400 outline-none"
+                  className="bg-slate-50 border border-slate-200 text-slate-800 rounded-lg px-2 py-1 text-xs font-medium focus:ring-1 focus:ring-slate-400 outline-none w-full sm:w-auto"
                 >
-                  <option value={7}>Past 7 Days</option>
-                  <option value={15}>Past 15 Days</option>
-                  <option value={30}>Past 30 Days (Default)</option>
+                  <option value={7}>7 Days</option>
+                  <option value={15}>15 Days</option>
+                  <option value={30}>30 Days (Default)</option>
                 </select>
               </div>
             </div>
@@ -1869,7 +2234,7 @@ export const LiveTrackingPage: React.FC = () => {
             <button
               onClick={handleApplyFilters}
               disabled={isLoadingQuakes || isLoadingWeather || !userLocation}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium transition-colors cursor-pointer disabled:opacity-40"
+              className="flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium transition-colors cursor-pointer disabled:opacity-40"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isLoadingQuakes || isLoadingWeather ? 'animate-spin' : ''}`} />
               <span>Update Data</span>

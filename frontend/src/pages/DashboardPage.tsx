@@ -9,13 +9,8 @@ import {
   Building,
   Play,
   PlusCircle,
-  GitCompare,
-  FileText,
-  Shield,
   ArrowRight,
-  TrendingUp,
   Activity,
-  Layers,
   Sparkles,
   Radio
 } from 'lucide-react';
@@ -95,37 +90,37 @@ export const DashboardPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-[#E1E7EF]">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 pb-4 border-b border-[#E1E7EF]">
         <div>
-          <h1 className="text-2xl font-bold text-[#0F172A] tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-[#0F172A] tracking-tight">
             Emergency Operations Dashboard
           </h1>
-          <p className="text-xs text-[#64748B] mt-1">
+          <p className="text-xs text-[#64748B] mt-0.5 sm:mt-1">
             Real-time analysis of simulated disaster evacuation drills across Greenfield City.
           </p>
         </div>
 
         {/* Quick Actions Bar */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           {scenarios.length > 0 && (
             <Link
               to={`/simulation/${scenarios[0].id}`}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition shadow-xs"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition shadow-xs"
             >
               <Play className="w-3.5 h-3.5 fill-current text-emerald-400" />
-              <span>Launch Active Drill</span>
+              <span>Launch Drill</span>
             </Link>
           )}
           <Link
             to="/live-tracking"
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-semibold text-xs transition shadow-xs"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-semibold text-xs transition shadow-xs"
           >
             <Radio className="w-3.5 h-3.5 text-rose-600 animate-pulse" />
-            <span>Live Hazard Radar</span>
+            <span>Live Radar</span>
           </Link>
           <Link
             to="/scenarios/new"
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 border border-[#E2E8F0] text-slate-800 font-semibold text-xs transition shadow-xs"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-slate-50 border border-[#E2E8F0] text-slate-800 font-semibold text-xs transition shadow-xs"
           >
             <PlusCircle className="w-3.5 h-3.5 text-slate-600" />
             <span>New Scenario</span>
@@ -134,7 +129,7 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2.5 sm:gap-3.5">
         <MetricCard
           label="District Population"
           value={metrics ? metrics.total_population.toLocaleString() : '—'}

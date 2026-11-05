@@ -59,7 +59,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             activeScenarioId={activeScenarioId}
           />
 
-          <main className="flex-1 lg:ml-64 p-2.5 sm:p-4 lg:p-6 min-h-[calc(100vh-4rem)] overflow-y-auto max-w-full">
+          <main className="flex-1 lg:ml-64 p-2 sm:p-4 lg:p-6 min-h-[calc(100vh-4rem)] overflow-y-auto overflow-x-hidden w-full max-w-full">
             {children}
           </main>
         </div>

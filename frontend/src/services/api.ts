@@ -250,6 +250,10 @@ export const api = {
       const res = await fetch(`${API_BASE}/weather/hazards?lat=${lat}&lon=${lon}`);
       if (res.ok) {
         const json = await res.json();
+        if (hazardsClientCache.size > 25) {
+          const firstKey = hazardsClientCache.keys().next().value;
+          if (firstKey) hazardsClientCache.delete(firstKey);
+        }
         hazardsClientCache.set(cacheKey, { time: now, data: json });
         return json;
       }
